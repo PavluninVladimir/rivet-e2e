@@ -1,0 +1,11 @@
+{
+  "name": "rivet-e2e",
+  "private": true,
+  "description": "E2E-тесты Rivet: браузер -> rivet-web -> rivetd -> Postgres",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1"
+  }
+}
