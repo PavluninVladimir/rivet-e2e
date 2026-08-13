@@ -2,6 +2,17 @@ import { expect, type Page } from '@playwright/test'
 
 // Хелперы ходят через UI, как человек: никаких прямых вызовов API.
 
+// Вход стендовым bootstrap-админом (rivetd поднят e2e-стендом с
+// RIVET_ADMIN_LOGIN/RIVET_ADMIN_PASSWORD). Консоль без сессии показывает
+// экран логина на любом адресе.
+export async function login(page: Page): Promise<void> {
+  await page.goto('/')
+  await page.getByPlaceholder('Логин').fill(process.env.E2E_ADMIN_LOGIN ?? 'e2e-admin')
+  await page.getByPlaceholder('Пароль').fill(process.env.E2E_ADMIN_PASSWORD ?? 'e2e-password')
+  await page.getByRole('button', { name: 'Войти' }).click()
+  await expect(page.getByRole('button', { name: 'Выйти' })).toBeVisible()
+}
+
 export async function createProject(page: Page, name: string): Promise<void> {
   await page.goto('/#/projects')
   await page.getByRole('button', { name: 'Новый проект' }).click()
