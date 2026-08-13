@@ -22,6 +22,15 @@ jobs:
           --health-interval 2s
           --health-timeout 2s
           --health-retries 15
+      # MinIO для транскриптов сессий (сценарии add-session-visibility):
+      # креды и порт как в docker-compose и дефолтах config, bucket создаёт
+      # сам rivetd (EnsureBucket).
+      minio:
+        image: bitnami/minio:latest
+        env:
+          MINIO_ROOT_USER: rivet
+          MINIO_ROOT_PASSWORD: rivetsecret
+        ports: ["9000:9000"]
     steps:
       # Структура как локально: rivet со вложенными rivet-web и rivet-e2e.
       - uses: actions/checkout@v7
