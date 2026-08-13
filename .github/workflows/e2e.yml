@@ -23,6 +23,15 @@ jobs:
           --health-timeout 2s
           --health-retries 15
     steps:
+      # MinIO для транскриптов сессий (сценарии add-session-visibility):
+      # обычный docker run, а не service-контейнер — тому нельзя передать
+      # команду `server /data`. Образ, креды и порт — как в docker-compose
+      # rivet-service; bucket создаёт сам rivetd (EnsureBucket). К старту
+      # rivetd (после сборки) MinIO давно готов.
+      - run: >-
+          docker run -d --name minio -p 9000:9000
+          -e MINIO_ROOT_USER=rivet -e MINIO_ROOT_PASSWORD=rivetsecret
+          minio/minio:RELEASE.2025-09-07T16-13-09Z server /data
       # Структура как локально: rivet со вложенными rivet-web и rivet-e2e.
       - uses: actions/checkout@v7
         with:
