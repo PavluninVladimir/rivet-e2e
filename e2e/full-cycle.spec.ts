@@ -1,9 +1,10 @@
 import { expect, test } from '@playwright/test'
-import { addTask, createEpic, createProject, expectNodeStatus, node } from './helpers'
+import { addTask, createEpic, createProject, expectNodeStatus, login, node } from './helpers'
 
 // Полный цикл (2.3): запуск Epic, fake-runner доводит задачу до review,
 // merge кнопкой в UI, done и 100% без перезагрузки страницы (SSE).
 test('задача проходит конвейер до merge кнопкой', async ({ page }) => {
+  await login(page)
   const stamp = Date.now()
   const taskTitle = `Полный цикл ${stamp}`
 

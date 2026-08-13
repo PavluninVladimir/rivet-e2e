@@ -1,9 +1,10 @@
 import { expect, test } from '@playwright/test'
-import { addTask, createEpic, createProject, expectNodeStatus, node } from './helpers'
+import { addTask, createEpic, createProject, expectNodeStatus, login, node } from './helpers'
 
 // Эскалация (2.4): fake-агент блокируется вопросом, карточка attention
 // появляется, ответ через деталку возвращает задачу в работу до done.
 test('blocked-задача эскалируется и возвращается в работу после ответа', async ({ page }) => {
+  await login(page)
   const stamp = Date.now()
   const taskTitle = `Эскалация ${stamp}`
 

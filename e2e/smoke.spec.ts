@@ -1,9 +1,10 @@
 import { expect, test } from '@playwright/test'
-import { addTask, createEpic, createProject, node } from './helpers'
+import { addTask, createEpic, createProject, login, node } from './helpers'
 
 // Smoke: проект, Epic и задача создаются через UI, задача видна в DAG,
 // деталка открывается, палитра находит задачу по имени (2.2).
 test('создание проекта, Epic и задачи через UI', async ({ page }) => {
+  await login(page)
   const stamp = Date.now()
   const project = `Smoke ${stamp}`
   const taskTitle = `Задача smoke ${stamp}`
