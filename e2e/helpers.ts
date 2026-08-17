@@ -1,5 +1,9 @@
 import { expect, type Page } from '@playwright/test'
 
+// Токен стенда намеренно длинный: короткий бэкенд не показывает вовсе,
+// и проверка «токен не виден в интерфейсе» стала бы бессмысленной.
+export const E2E_TOKEN = 'ghp_e2e_token_0123456789'
+
 // Хелперы ходят через UI, как человек: никаких прямых вызовов API.
 
 // Вход стендовым bootstrap-админом (rivetd поднят e2e-стендом с
@@ -13,14 +17,29 @@ export async function login(page: Page): Promise<void> {
   await expect(page.getByRole('button', { name: 'Выйти' })).toBeVisible()
 }
 
+// Проект создаётся пошаговым мастером: репозиторий (с проверкой доступа),
+// проверки, подтверждение. Стенд работает на fake-хостинге, поэтому
+// проверка проходит с любым токеном.
 export async function createProject(page: Page, name: string): Promise<void> {
   await page.goto('/#/projects')
   await page.getByRole('button', { name: 'Новый проект' }).click()
-  await page.getByPlaceholder('Название').fill(name)
-  await page.getByPlaceholder('Репозиторий (owner/name)').fill('e2e/demo')
-  await page.getByRole('button', { name: 'Создать' }).click()
+  await page.getByPlaceholder('Название проекта').fill(name)
+  await page.getByPlaceholder(/URL репозитория/).fill('https://fake.local/e2e/demo')
+  await page.getByPlaceholder('Токен доступа к хостингу').fill(E2E_TOKEN)
+  await page.getByRole('button', { name: 'Проверить доступ' }).click()
+  await expect(page.getByRole('button', { name: 'Далее' })).toBeEnabled()
+  await page.getByRole('button', { name: 'Далее' }).click()   // → проверки
+  await page.getByRole('button', { name: 'Далее' }).click()   // → подтверждение
+  await page.getByRole('button', { name: 'Создать проект' }).click()
   // Создание делает проект текущим и открывает список его Epic'ов.
   await expect(page.getByRole('button', { name: 'Новый Epic' })).toBeVisible()
+}
+
+// Страница настроек текущего проекта.
+export async function openProjectSettings(page: Page, name: string): Promise<void> {
+  await page.goto('/#/projects')
+  await page.locator('tr', { hasText: name }).getByRole('button', { name: 'Настройки' }).click()
+  await expect(page.getByRole('heading', { name: 'Настройки проекта' })).toBeVisible()
 }
 
 export async function createEpic(page: Page, title: string): Promise<void> {
