@@ -55,12 +55,26 @@ test('две задачи с общим файлом дают предупреж
   await expect(page.locator('.budget-pause')).toHaveCount(2)
   await expect(page.locator('.budget-pause').first()).toContainText('e2e-result.txt')
 
-  // Событие пересечения — в timeline обеих задач.
+  // Событие пересечения — в timeline обеих задач, с отметкой о доставке
+  // предупреждения самому агенту (add-context-channel: обратный канал).
   await page.goto('/' + epicHash)
   await expectNodeStatus(page, `Пересечение A ${stamp}`, 'REVIEW', 60_000)
   await node(page, `Пересечение A ${stamp}`).click()
   await expect(page.locator('#drawer .tl')).toContainText('пересечение работ с task-')
+  await expect(page.locator('#drawer .tl')).toContainText('агент предупреждён')
   await page.locator('#drawer .close').click()
+  // Ждём конца coding-стадии B: список сессий деталки читается один раз при
+  // открытии, у ещё выполняющейся стадии транскрипта нет.
+  await expectNodeStatus(page, `Пересечение B ${stamp}`, 'REVIEW', 60_000)
   await node(page, `Пересечение B ${stamp}`).click()
   await expect(page.locator('#drawer .tl')).toContainText('пересечение работ с task-')
+  await expect(page.locator('#drawer .tl')).toContainText('агент предупреждён')
+
+  // Предупреждение доехало до агента: оно видно в транскрипте его сессии
+  // (fake-claude печатает полученный обратным каналом текст в поток).
+  const coding = page.locator('#drawer .sess-row', { hasText: 'CODING' }).first()
+  await expect(coding).toBeVisible()
+  await coding.click()
+  await expect(page.locator('#drawer .sess-term'))
+    .toContainText('Предупреждение Rivet', { timeout: 20_000 })
 })
