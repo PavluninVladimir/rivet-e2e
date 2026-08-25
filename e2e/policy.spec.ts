@@ -79,6 +79,14 @@ test('защищённый путь откладывает merge, деталка
   await expect(drawer).toContainText('e2e')
   await expect(drawer.locator('.tl')).toContainText('merge отложен политикой')
 
+  // Политика доехала до агента (add-policy-delivery): защищённый путь и
+  // версия политики видны в транскрипте coding-сессии.
+  const coding = drawer.locator('.sess-row', { hasText: 'CODING' }).first()
+  await coding.click()
+  await expect(drawer.locator('.sess-term')).toContainText('Учитываю политику', { timeout: 20_000 })
+  await expect(drawer.locator('.sess-term')).toContainText('Политика проекта (версия')
+  await coding.click()
+
   // Человек подтверждает merge кнопкой.
   await drawer.getByRole('button', { name: 'Подтвердить merge' }).click()
   await expect(drawer.locator('.st')).toHaveText('DONE', { timeout: 30_000 })
