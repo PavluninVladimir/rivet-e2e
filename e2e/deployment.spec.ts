@@ -47,13 +47,15 @@ test('merge запускает auto-публикацию: Deploy → Verify, с�
   await openProjectSettings(page, projectName)
   const card = page.locator('.env-card', { hasText: 'staging' })
   await expect(card.locator('.sess-stage')).toHaveText('DONE', { timeout: 60_000 })
-  await expect(card).toContainText('fake-merge-') // версия — sha merge-коммита
+  // Версия публикации у fake-хостинга — базовая ветка: настоящего
+  // merge-коммита он не делает, а рабочая копия по ней выкачивается.
+  await expect(card).toContainText('main')
 
   // История: лог публикации сохранён и замаскированных секретов не требует —
   // просто проверяем содержимое вывода команды доставки.
   await card.getByRole('button', { name: 'История' }).click()
   await card.locator('.sess-row').first().click()
-  await expect(card.locator('.term')).toContainText('доставка версии fake-merge-')
+  await expect(card.locator('.term')).toContainText('доставка версии main')
 })
 
 test('провал Verify: публикация failed, окружение на паузе, resume снимает', async ({ page }) => {
@@ -117,4 +119,36 @@ test('окружение с внешним пайплайном публикуе
   await expect(card.locator('.sess-stage')).toHaveText('DONE', { timeout: 60_000 })
   // Ссылка на прогон пайплайна видна рядом со статусом.
   await expect(card.getByRole('link', { name: /прогон/ })).toBeVisible()
+})
+
+// Публикация в Kubernetes (add-k8s-delivery): команды собирает Rivet из
+// параметров кластера. На стенде kubectl нет, поэтому проверяем, что
+// окружение создаётся, публикация запускается и её итог виден.
+test('окружение Kubernetes создаётся и публикация доходит до итога', async ({ page }) => {
+  await login(page)
+  const stamp = Date.now()
+  const projectName = `K8s ${stamp}`
+
+  await createProject(page, projectName)
+  await openProjectSettings(page, projectName)
+  await page.getByRole('button', { name: 'Новое окружение' }).click()
+  await page.getByPlaceholder(/Имя \(staging/).fill('cluster')
+  await page.locator('.modal select').nth(1).selectOption('k8s')
+  await page.getByPlaceholder('Namespace').fill('prod')
+  await page.getByPlaceholder(/Каталог манифестов/).fill('deploy/k8s')
+  await page.getByPlaceholder(/Объект для проверки/).fill('deployment/api')
+  await page.locator('.modal').getByRole('button', { name: 'Сохранить' }).click()
+
+  const card = page.locator('.env-card', { hasText: 'cluster' })
+  await expect(card).toBeVisible()
+  await expect(card).toContainText('kubernetes')
+
+  // Публикация доходит до runner'а: он готовит рабочую копию репозитория
+  // на версии публикации (протокол v10) и выполняет собранную Rivet
+  // команду. Манифестов в демо-репозитории стенда нет, поэтому публикация
+  // честно проваливается на kubectl — и в итоге виден путь из
+  // конфигурации, то есть команда собралась из параметров кластера.
+  await card.getByRole('button', { name: 'Опубликовать' }).click()
+  await expect(card.locator('.sess-stage')).toHaveText('FAILED', { timeout: 60_000 })
+  await expect(card).toContainText('deploy/k8s')
 })
