@@ -108,3 +108,27 @@ test('вкладка «Политики» показывает движок, а�
   await expect(grid).toContainText('Движок политик')
   await expect(grid).toContainText('встроенный движок')
 })
+
+// Источник политики проекта (add-policy-git-provider): владелец
+// переключает его на репозиторий, значения становятся только для чтения,
+// возврат в консоль снова разрешает правку.
+test('источник политики проекта переключается на репозиторий и обратно', async ({ page }) => {
+  await login(page)
+  const stamp = Date.now()
+  const projectName = `PolicySource ${stamp}`
+
+  await createProject(page, projectName)
+  await openProjectSettings(page, projectName)
+  const row = page.locator('.set-row', { hasText: 'Источник политики' })
+  await expect(row).toContainText('хранилище Rivet')
+
+  await row.getByRole('button', { name: 'Хранить в репозитории' }).click()
+  await expect(page.getByText('политика читается из репозитория')).toBeVisible()
+  await expect(row).toContainText('.rivet/policy.yaml')
+  // Значения стали только для чтения: чекбоксов «переопределить» нет.
+  await expect(policyRow(page, 'Авто-merge после review').getByRole('checkbox')).toHaveCount(0)
+
+  await row.getByRole('button', { name: 'Вернуть в консоль' }).click()
+  await expect(page.getByText('политика правится в консоли')).toBeVisible()
+  await expect(policyRow(page, 'Авто-merge после review').getByRole('checkbox')).toHaveCount(1)
+})
