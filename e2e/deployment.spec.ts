@@ -14,7 +14,8 @@ async function createEnvironment(page, project: string, name: string, opts: {
   await openProjectSettings(page, project)
   await page.getByRole('button', { name: 'Новое окружение' }).click()
   await page.getByPlaceholder(/Имя \(staging/).fill(name)
-  await page.locator('.modal select').selectOption(opts.trigger)
+  // Селектов в форме два: правило запуска и тип доставки.
+  await page.locator('.modal select').first().selectOption(opts.trigger)
   await page.getByPlaceholder(/Команда доставки/).fill(opts.deployCmd)
   await page.getByPlaceholder(/Команда проверки/).fill(opts.verifyCmd)
   await page.locator('.modal').getByRole('button', { name: 'Сохранить' }).click()
@@ -88,4 +89,32 @@ test('провал Verify: публикация failed, окружение на 
   await card.getByRole('button', { name: 'Возобновить' }).click()
   await expect(card.locator('.env-paused')).toHaveCount(0)
   await expect(card.getByRole('button', { name: 'Опубликовать' })).toBeEnabled()
+})
+
+// Публикация через внешний пайплайн (add-external-delivery): доставку
+// выполняет хостинг, Rivet триггерит прогон, ждёт его и проверяет URL.
+// Fake-хостинг стенда отвечает успехом сразу, verify_url — health самого
+// rivetd (он всегда доступен из стенда).
+test('окружение с внешним пайплайном публикуется и показывает прогон', async ({ page }) => {
+  await login(page)
+  const stamp = Date.now()
+  const projectName = `Pipeline ${stamp}`
+
+  await createProject(page, projectName)
+  await openProjectSettings(page, projectName)
+  await page.getByRole('button', { name: 'Новое окружение' }).click()
+  await page.getByPlaceholder(/Имя \(staging/).fill('prod')
+  await page.locator('.modal select').nth(1).selectOption('pipeline')
+  await page.getByPlaceholder(/Пайплайн хостинга/).fill('deploy.yml')
+  await page.getByPlaceholder(/URL health-check/).fill('http://localhost:8281/api/v1/health')
+  await page.locator('.modal').getByRole('button', { name: 'Сохранить' }).click()
+
+  const card = page.locator('.env-card', { hasText: 'prod' })
+  await expect(card).toBeVisible()
+  await expect(card).toContainText('пайплайн хостинга')
+
+  await card.getByRole('button', { name: 'Опубликовать' }).click()
+  await expect(card.locator('.sess-stage')).toHaveText('DONE', { timeout: 60_000 })
+  // Ссылка на прогон пайплайна видна рядом со статусом.
+  await expect(card.getByRole('link', { name: /прогон/ })).toBeVisible()
 })
