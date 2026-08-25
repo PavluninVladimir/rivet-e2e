@@ -83,3 +83,20 @@ test('защищённый путь откладывает merge, деталка
   await drawer.getByRole('button', { name: 'Подтвердить merge' }).click()
   await expect(drawer.locator('.st')).toHaveText('DONE', { timeout: 30_000 })
 })
+
+// Движок политик (add-policy-engine): вкладка «Политики» раздела
+// управления показывает режим и состояние движка, а авто-merge проходит
+// через него — решения гейта остались прежними.
+test('вкладка «Политики» показывает движок, авто-merge работает через него', async ({ page }) => {
+  await login(page)
+  await page.goto('/#/app-management/policies')
+  const engine = page.locator('.budget-pause', { hasText: 'Движок политик' })
+  await expect(engine).toBeVisible()
+  await expect(engine).toContainText('встроенный')
+  await expect(engine).toContainText('отвечает')
+  // Состояние установки показывает движок отдельным компонентом.
+  await page.goto('/#/app-management/status')
+  const grid = page.locator('.status-grid')
+  await expect(grid).toContainText('Движок политик')
+  await expect(grid).toContainText('встроенный движок')
+})
