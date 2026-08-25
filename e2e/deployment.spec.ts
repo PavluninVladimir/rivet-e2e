@@ -152,3 +152,32 @@ test('окружение Kubernetes создаётся и публикация �
   await expect(card.locator('.sess-stage')).toHaveText('FAILED', { timeout: 60_000 })
   await expect(card).toContainText('deploy/k8s')
 })
+
+// Публикация через GitOps (add-gitops-delivery): Rivet коммитит версию в
+// репозиторий конфигурации и ждёт, пока окружение начнёт отвечать ею.
+// Стенд не поднимает «окружение», которое умело бы показывать свою
+// версию, поэтому проверяется этап Deploy: коммит выполнен и виден, а
+// публикация ждёт синхронизации. Ожидание версии покрыто тестами Go.
+test('окружение GitOps коммитит версию и ждёт синхронизации', async ({ page }) => {
+  await login(page)
+  const stamp = Date.now()
+  const projectName = `GitOps ${stamp}`
+
+  await createProject(page, projectName)
+  await openProjectSettings(page, projectName)
+  await page.getByRole('button', { name: 'Новое окружение' }).click()
+  await page.getByPlaceholder(/Имя \(staging/).fill('gitops')
+  await page.locator('.modal select').nth(1).selectOption('gitops')
+  await page.getByPlaceholder(/Файл с версией/).fill('envs/prod/version')
+  await page.getByPlaceholder(/URL health-check/).fill('http://localhost:8281/api/v1/health')
+  await page.locator('.modal').getByRole('button', { name: 'Сохранить' }).click()
+
+  const card = page.locator('.env-card', { hasText: 'gitops' })
+  await expect(card).toBeVisible()
+  await expect(card).toContainText('gitops')
+
+  await card.getByRole('button', { name: 'Опубликовать' }).click()
+  await expect(card.locator('.sess-stage')).toHaveText('DEPLOYING', { timeout: 60_000 })
+  // Ссылка на коммит версии видна рядом со статусом.
+  await expect(card.getByRole('link', { name: /коммит/ })).toBeVisible()
+})
