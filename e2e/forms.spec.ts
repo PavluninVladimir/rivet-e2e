@@ -45,7 +45,7 @@ test('кнопка сохранения занята на время запро�
   await login(page)
   const name = `Forms ${Date.now()}`
   await createProject(page, name)
-  await openProjectSettings(page, name)
+  await openProjectSettings(page, name, 'Процесс')
 
   let puts = 0
   await page.route('**/policy', async route => {
