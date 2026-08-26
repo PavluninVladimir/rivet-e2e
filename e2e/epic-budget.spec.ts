@@ -14,7 +14,7 @@ test('бюджет Epic останавливает назначения и сн�
   await addTask(page, taskTitle)
 
   // Бюджет 1000 токенов до запуска.
-  await page.locator('.epic-meta-row').getByRole('button', { name: '✎' }).click()
+  await page.locator('.epic-meta-row').getByRole('button', { name: 'изменить бюджет' }).click()
   await page.locator('.epic-meta-row input[type="number"]').fill('1000')
   await page.locator('.epic-meta-row').getByRole('button', { name: 'OK' }).click()
   // Дождаться выхода из режима редактирования (PATCH прошёл).
@@ -29,7 +29,7 @@ test('бюджет Epic останавливает назначения и сн�
     .toBeVisible({ timeout: 20_000 })
 
   // Человек поднимает бюджет — review выполняется, плашка исчезает.
-  await page.locator('.epic-meta-row').getByRole('button', { name: '✎' }).click()
+  await page.locator('.epic-meta-row').getByRole('button', { name: 'изменить бюджет' }).click()
   await page.locator('.epic-meta-row input[type="number"]').fill('100000000')
   await page.locator('.epic-meta-row').getByRole('button', { name: 'OK' }).click()
   await expect(page.locator('.epic-meta-row input[type="number"]')).toHaveCount(0)

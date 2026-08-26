@@ -1,0 +1,42 @@
+{
+  "last_sync_commit": "82ec87ff8564b5ccf3286ff076135cede42e3fe8",
+  "total_pages": 3,
+  "docs_mode": "deterministic",
+  "docs_enabled": false,
+  "phase_timings": {
+    "co_change": 0.0,
+    "traverse": 0.06,
+    "git": 0.13,
+    "parse": 0.33,
+    "tsconfig": 0.0,
+    "graph.ts_index": 0.0,
+    "graph.imports": 0.0,
+    "graph.type_refs": 0.0,
+    "graph.heritage": 0.0,
+    "graph.calls": 0.0,
+    "dynamic_hints": 0.0,
+    "graph.metrics": 0.0,
+    "graph.communities": 0.0,
+    "external_systems": 0.0,
+    "dead_code": 0.0,
+    "decisions": 0.0,
+    "health": 0.01,
+    "knowledge_graph.skeleton": 0.0,
+    "graph.flows": 0.0
+  },
+  "knowledge_graph": {
+    "version": "1.0.0",
+    "node_count": 6,
+    "layer_count": 2,
+    "tour_steps": 2,
+    "has_summaries": true,
+    "fingerprint": "d669256dd5df06af"
+  },
+  "store_format_version": 2,
+  "written_by_version": "0.42.0",
+  "last_full_rescore_at": 1786638021.0,
+  "health_analyzer_version": 1,
+  "config_fingerprint": "905a7ada759f5cf95c22f65e162a86f28c37a0d56f9b7f59e321b8ee39e3d078",
+  "renderer_fingerprint": "86dad22a253142b3657f0ba46bfbf33c73308ea93e8c60c0a57fdeeceb484028:9a51bd73f8500333af22ab47eca710386c9116a557f804fd1af07a5cdbe09800",
+  "last_docs_commit": "f6310962b77042b7f327691a5f3826e062246344"
+}
