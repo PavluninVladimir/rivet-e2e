@@ -53,7 +53,7 @@ test('владелец одобряет шаг review из «Моих шагов
   await node(page, taskTitle).click()
   const drawer = page.locator('#drawer')
   await expect(drawer.locator('.step-run', { hasText: 'человек' })).toContainText('ok')
-  await expect(drawer.getByText('review пройден')).toBeVisible({ timeout: 30_000 })
+  await expect(drawer.getByText('review пройден').first()).toBeVisible({ timeout: 30_000 })
   await drawer.getByRole('button', { name: 'Merge' }).click()
   await expect(drawer.locator('.st')).toHaveText('DONE', { timeout: 30_000 })
 })
