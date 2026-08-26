@@ -35,11 +35,14 @@ export async function createProject(page: Page, name: string): Promise<void> {
   await expect(page.getByRole('button', { name: 'Новый Epic' })).toBeVisible()
 }
 
-// Страница настроек текущего проекта.
-export async function openProjectSettings(page: Page, name: string): Promise<void> {
+// Страница настроек проекта: открывается кнопкой из списка, затем нужная
+// вкладка (Общее · Участники · Процесс · Политики · Окружения).
+export type SettingsTab = 'Общее' | 'Участники' | 'Процесс' | 'Политики' | 'Окружения'
+export async function openProjectSettings(page: Page, name: string, tab: SettingsTab = 'Общее'): Promise<void> {
   await page.goto('/#/projects')
   await page.locator('tr', { hasText: name }).getByRole('button', { name: 'Настройки' }).click()
   await expect(page.getByRole('heading', { name: 'Настройки проекта' })).toBeVisible()
+  if (tab !== 'Общее') await page.locator('.tabs').getByRole('button', { name: tab, exact: true }).click()
 }
 
 export async function createEpic(page: Page, title: string): Promise<void> {

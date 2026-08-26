@@ -64,13 +64,23 @@ test('страница настроек показывает всё про пр�
   await createProject(page, name)
   await openProjectSettings(page, name)
 
-  // Репозиторий, webhook, проверки, участники, окружения — в одном месте.
+  // Репозиторий, webhook, проверки — на «Общем»; участники и окружения —
+  // на своих вкладках, вкладка адресуема.
   await expect(page.getByRole('heading', { name: 'Репозиторий' })).toBeVisible()
   await expect(page.locator('.page')).toContainText('e2e/demo')
   await expect(page.getByRole('heading', { name: 'Webhook' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Название и проверки' })).toBeVisible()
+  const tabs = page.locator('.tabs')
+  await tabs.getByRole('button', { name: 'Участники', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Участники' })).toBeVisible()
+  await expect(page).toHaveURL(/\/settings\/members$/)
+  await page.reload()
+  await expect(page.getByRole('heading', { name: 'Участники' })).toBeVisible()
+  await tabs.getByRole('button', { name: 'Окружения', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Окружения' })).toBeVisible()
+  // Адрес без вкладки открывает «Общее».
+  await page.goto(page.url().replace(/\/settings\/.*$/, '/settings'))
+  await expect(page.getByRole('heading', { name: 'Репозиторий' })).toBeVisible()
 
   // Токен после сохранения не показывается: виден только префикс владельца.
   await expect(page.locator('.page')).not.toContainText(E2E_TOKEN)

@@ -11,7 +11,7 @@ async function createEnvironment(page, project: string, name: string, opts: {
   deployCmd: string
   verifyCmd: string
 }) {
-  await openProjectSettings(page, project)
+  await openProjectSettings(page, project, 'Окружения')
   await page.getByRole('button', { name: 'Новое окружение' }).click()
   await page.getByPlaceholder(/Имя \(staging/).fill(name)
   // Селектов в форме два: правило запуска и тип доставки.
@@ -44,7 +44,7 @@ test('merge запускает auto-публикацию: Deploy → Verify, с�
   await page.locator('#drawer').getByRole('button', { name: 'Merge' }).click()
 
   // Merge ставит auto-публикацию; карточка окружения доезжает до DONE по SSE.
-  await openProjectSettings(page, projectName)
+  await openProjectSettings(page, projectName, 'Окружения')
   const card = page.locator('.env-card', { hasText: 'staging' })
   await expect(card.locator('.sess-stage')).toHaveText('DONE', { timeout: 60_000 })
   // Версия публикации у fake-хостинга — базовая ветка: настоящего
@@ -103,7 +103,7 @@ test('окружение с внешним пайплайном публикуе
   const projectName = `Pipeline ${stamp}`
 
   await createProject(page, projectName)
-  await openProjectSettings(page, projectName)
+  await openProjectSettings(page, projectName, 'Окружения')
   await page.getByRole('button', { name: 'Новое окружение' }).click()
   await page.getByPlaceholder(/Имя \(staging/).fill('prod')
   await page.locator('.modal select').nth(1).selectOption('pipeline')
@@ -130,7 +130,7 @@ test('окружение Kubernetes создаётся и публикация �
   const projectName = `K8s ${stamp}`
 
   await createProject(page, projectName)
-  await openProjectSettings(page, projectName)
+  await openProjectSettings(page, projectName, 'Окружения')
   await page.getByRole('button', { name: 'Новое окружение' }).click()
   await page.getByPlaceholder(/Имя \(staging/).fill('cluster')
   await page.locator('.modal select').nth(1).selectOption('k8s')
@@ -164,7 +164,7 @@ test('окружение GitOps коммитит версию и ждёт син
   const projectName = `GitOps ${stamp}`
 
   await createProject(page, projectName)
-  await openProjectSettings(page, projectName)
+  await openProjectSettings(page, projectName, 'Окружения')
   await page.getByRole('button', { name: 'Новое окружение' }).click()
   await page.getByPlaceholder(/Имя \(staging/).fill('gitops')
   await page.locator('.modal select').nth(1).selectOption('gitops')

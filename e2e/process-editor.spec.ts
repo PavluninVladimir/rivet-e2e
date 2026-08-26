@@ -46,7 +46,7 @@ test('шаг prompt исполняется агентом, процесс пра
   }, { timeout: 60_000 }).toBe(true)
 
   // Редактор в настройках проекта: шаг prompt виден, название правится.
-  await openProjectSettings(page, name)
+  await openProjectSettings(page, name, 'Процесс')
   const step = page.locator('.proc-step[data-step="migrations"]')
   await expect(step).toBeVisible()
   await expect(step.locator('textarea')).toHaveValue('Проверь миграции на обратимость.')
@@ -74,7 +74,7 @@ test('ограничение установки «человек на review» �
   await expect(page.getByText(/сохранена версия|не соответствуют/).first()).toBeVisible()
 
   // Владелец сохраняет процесс с review без человека — ошибка у шага review.
-  await openProjectSettings(page, name)
+  await openProjectSettings(page, name, 'Процесс')
   const review = page.locator('.proc-step[data-step="review"]')
   await review.locator('.proc-title').fill('Только агенты')
   await page.getByRole('button', { name: 'Сохранить процесс' }).click()

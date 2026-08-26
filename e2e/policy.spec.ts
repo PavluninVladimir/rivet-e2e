@@ -32,7 +32,7 @@ test('включённый авто-merge мержит задачу без кн�
   const taskTitle = `Авто-merge ${stamp}`
 
   await createProject(page, projectName)
-  await openProjectSettings(page, projectName)
+  await openProjectSettings(page, projectName, 'Политики')
   await expect(policyRow(page, 'Авто-merge после review')).toContainText('наследуется')
   await overrideSwitch(page, 'Авто-merge после review', true)
   await savePolicy(page)
@@ -58,7 +58,7 @@ test('защищённый путь откладывает merge, деталка
   const taskTitle = `Защищённый путь ${stamp}`
 
   await createProject(page, projectName)
-  await openProjectSettings(page, projectName)
+  await openProjectSettings(page, projectName, 'Политики')
   await overrideSwitch(page, 'Авто-merge после review', true)
   const pathsRow = policyRow(page, 'Пути, требующие человека')
   await pathsRow.getByRole('checkbox').check()
@@ -118,7 +118,7 @@ test('источник политики проекта переключаетс�
   const projectName = `PolicySource ${stamp}`
 
   await createProject(page, projectName)
-  await openProjectSettings(page, projectName)
+  await openProjectSettings(page, projectName, 'Политики')
   const row = page.locator('.set-row', { hasText: 'Источник политики' })
   await expect(row).toContainText('хранилище Rivet')
 
