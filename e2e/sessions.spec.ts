@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { addTask, createEpic, createProject, expectNodeStatus, login, node } from './helpers'
+import { addTask, createEpic, createProject, expectNodeStatus, login, node, openProjectSettings } from './helpers'
 
 // Видимость сессий (add-session-visibility): в деталке завершённой стадии
 // открывается сохранённый транскрипт, секрет из вывода агента замаскирован.
@@ -40,9 +40,24 @@ test('транскрипт завершённой стадии открывае�
 test('сессия без транскрипта показывает «транскрипт недоступен»', async ({ page }) => {
   await login(page)
   const stamp = Date.now()
+  const projectName = `NoTranscript ${stamp}`
   const taskTitle = `Без транскрипта ${stamp}`
 
-  await createProject(page, `NoTranscript ${stamp}`)
+  await createProject(page, projectName)
+  // С тестировщиком (add-agent-roles) у TESTING есть его сессия с
+  // транскриптом. Участник шага test без роли выполняет только проверки
+  // проекта, как до появления ролей. Процесс проекта, а не флаг
+  // tester_agent: флаг действует только на процесс по умолчанию, а
+  // предыдущие сценарии могли сохранить процесс установки явно.
+  await openProjectSettings(page, projectName, 'Процесс')
+  await page.locator('.pg-node[data-step="test"]').click()
+  const dlg = page.getByRole('dialog')
+  await dlg.locator('[data-participant]').first().getByLabel('роль', { exact: true }).selectOption({ label: 'без роли' })
+  await dlg.getByRole('button', { name: 'Готово' }).click()
+  await page.getByRole('button', { name: 'Сохранить процесс' }).click()
+  await expect(page.locator('.proc-section .note')).toContainText('сохранена версия проекта')
+
+  await page.goto('/#/epics')
   await createEpic(page, `Epic nt ${stamp}`)
   await addTask(page, taskTitle)
   await page.getByRole('button', { name: 'Запустить' }).click()
@@ -50,7 +65,7 @@ test('сессия без транскрипта показывает «тран
   await node(page, taskTitle).click()
 
   const drawer = page.locator('#drawer')
-  // TESTING в e2e-проекте без настроенных проверок не пишет транскрипт.
+  // TESTING без роли и без настроенных проверок не пишет транскрипт.
   const testing = drawer.locator('.sess-row', { hasText: 'TESTING' }).first()
   await testing.click()
   await expect(drawer.locator('.sess-term')).toHaveText('транскрипт недоступен')
