@@ -23,15 +23,16 @@ jobs:
           --health-timeout 2s
           --health-retries 15
     steps:
-      # MinIO для транскриптов сессий (сценарии add-session-visibility):
-      # обычный docker run, а не service-контейнер — тому нельзя передать
-      # команду `server /data`. Образ, креды и порт — как в docker-compose
-      # rivet-service; bucket создаёт сам rivetd (EnsureBucket). К старту
-      # rivetd (после сборки) MinIO давно готов.
+      # S3 для транскриптов сессий (сценарии add-session-visibility).
+      # RustFS вместо MinIO: образы MinIO убраны с Docker Hub и Quay.
+      # Обычный docker run, а не service-контейнер: тому нельзя передать
+      # команду `/data`. Креды и порт как в docker-compose rivet-service,
+      # bucket создаёт сам rivetd (EnsureBucket). К старту rivetd (после
+      # сборки) S3 давно готов.
       - run: >-
-          docker run -d --name minio -p 9000:9000
-          -e MINIO_ROOT_USER=rivet -e MINIO_ROOT_PASSWORD=rivetsecret
-          minio/minio:RELEASE.2025-09-07T16-13-09Z server /data
+          docker run -d --name s3 -p 9000:9000
+          -e RUSTFS_ACCESS_KEY=rivet -e RUSTFS_SECRET_KEY=rivetsecret
+          rustfs/rustfs:1.0.3 /data
       # Структура как локально: rivet со вложенными rivet-web и rivet-e2e.
       - uses: actions/checkout@v7
         with:
