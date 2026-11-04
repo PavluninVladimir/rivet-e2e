@@ -44,7 +44,11 @@ npx playwright test
 
 Стенд занимает порты 8281 (API и консоль), 8291 (gRPC runner'ов) и 8283
 (fake-провайдер моделей); адрес консоли для тестов задан в
-`playwright.config.ts`.
+`playwright.config.ts`. Порты меняются переменными `E2E_HTTP_PORT`,
+`E2E_GRPC_PORT` и `E2E_LLM_PORT`, каталог стенда переменной
+`E2E_STAND_DIR`: так уживаются стенды из разных копий дерева. Два стенда
+из одной копии одновременно не запускайте: оба собирают консоль в
+`rivet-service/internal/webui/dist`.
 
 ## CI
 

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { addTask, createEpic, createProject, expectNodeStatus, login, node, openProjectSettings } from './helpers'
+import { HTTP_PORT, addTask, createEpic, createProject, expectNodeStatus, login, node, openProjectSettings } from './helpers'
 
 // Публикация окружений (implement-deployment): auto-деплой после merge
 // с Deploy → Verify и провал с паузой и возобновлением.
@@ -108,7 +108,7 @@ test('окружение с внешним пайплайном публикуе
   await page.getByPlaceholder(/Имя \(staging/).fill('prod')
   await page.locator('.modal select').nth(1).selectOption('pipeline')
   await page.getByPlaceholder(/Пайплайн хостинга/).fill('deploy.yml')
-  await page.getByPlaceholder(/URL health-check/).fill('http://localhost:8281/api/v1/health')
+  await page.getByPlaceholder(/URL health-check/).fill(`http://localhost:${HTTP_PORT}/api/v1/health`)
   await page.locator('.modal').getByRole('button', { name: 'Сохранить' }).click()
 
   const card = page.locator('.env-card', { hasText: 'prod' })
@@ -169,7 +169,7 @@ test('окружение GitOps коммитит версию и ждёт син
   await page.getByPlaceholder(/Имя \(staging/).fill('gitops')
   await page.locator('.modal select').nth(1).selectOption('gitops')
   await page.getByPlaceholder(/Файл с версией/).fill('envs/prod/version')
-  await page.getByPlaceholder(/URL health-check/).fill('http://localhost:8281/api/v1/health')
+  await page.getByPlaceholder(/URL health-check/).fill(`http://localhost:${HTTP_PORT}/api/v1/health`)
   await page.locator('.modal').getByRole('button', { name: 'Сохранить' }).click()
 
   const card = page.locator('.env-card', { hasText: 'gitops' })

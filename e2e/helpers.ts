@@ -4,6 +4,9 @@ import { expect, type Page } from '@playwright/test'
 // и проверка «токен не виден в интерфейсе» стала бы бессмысленной.
 export const E2E_TOKEN = 'ghp_e2e_token_0123456789'
 
+// Порт API стенда (E2E_HTTP_PORT, как в playwright.config.ts и e2e-stand.sh).
+export const HTTP_PORT = process.env.E2E_HTTP_PORT ?? '8281'
+
 // Хелперы ходят через UI, как человек: никаких прямых вызовов API.
 
 // Вход стендовым bootstrap-админом (rivetd поднят e2e-стендом с
