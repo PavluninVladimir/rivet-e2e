@@ -13,6 +13,7 @@ test('реестр показывает активную сессию, поис�
   await createProject(page, `Team ${stamp}`)
   await createEpic(page, `Epic team ${stamp}`)
   await addTask(page, taskTitle, 'Наблюдение за сессией [e2e-slow]')
+  const epicHash = await page.evaluate(() => location.hash)
   await page.getByRole('button', { name: 'Запустить' }).click()
 
   // Пока сессия держится открытой — реестр показывает её и последний шаг.
@@ -33,6 +34,12 @@ test('реестр показывает активную сессию, поис�
   await result.first().click()
   await expect(page.locator('#drawer')).toBeVisible()
   await expect(page.locator('#drawer .sess-row').first()).toBeVisible()
+
+  // Поиск находит и ещё открытую сессию, поэтому конец конвейера ждём явно.
+  // Иначе coding этой задачи, а за ним тестировщик (add-agent-roles, тоже
+  // на coding-runner'е) заняли бы агентов и runner'ы сценария пересечений.
+  await page.goto('/' + epicHash)
+  await expectNodeStatus(page, taskTitle, 'REVIEW')
 })
 
 test('две задачи с общим файлом дают предупреждение о пересечении обеим', async ({ page }) => {

@@ -19,9 +19,11 @@ test('полная глубина: шаги с инструментом и фа�
   const drawer = page.locator('#drawer')
 
   // Timeline: шаг PostToolUse с чипом инструмента и относительным путём файла.
+  // Перед чипом инструмента стоит плашка роли исполнителя (add-agent-roles).
   const editStep = drawer.locator('.tl-row', { hasText: 'e2e-result.txt' }).filter({ hasText: 'Edit' })
   await expect(editStep.first()).toBeVisible()
-  await expect(editStep.first().locator('.chip')).toHaveText('Edit')
+  await expect(editStep.first().locator('.chip:not(.role-chip)')).toHaveText('Edit')
+  await expect(editStep.first().locator('.role-chip')).toContainText('Разработчик')
 
   // Сессия coding (fake-claude): глубина full, файлы сессии накоплены.
   const codingRow = drawer.locator('.sess-row', { hasText: 'CODING' }).first()
