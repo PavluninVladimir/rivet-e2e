@@ -25,7 +25,8 @@ test('импорт истории даёт выполненный Epic с отм
   expect(resp.ok()).toBeTruthy()
   expect(await resp.json()).toMatchObject({ epics_created: 1, tasks_created: 1 })
 
-  await page.goto('/#/epics')
+  // Создание открыло Epic’и проекта: перезагрузка показывает импорт.
+  await page.reload()
   const row = page.locator('tr', { hasText: `Ядро конвейера ${stamp}` })
   await expect(row).toBeVisible()
   await expect(row).toContainText('DONE')

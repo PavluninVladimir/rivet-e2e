@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { addTask, createEpic, createProject, expectNodeStatus, login, node, openProjectSettings } from './helpers'
+import { addTask, createEpic, createProject, expectNodeStatus, login, node, openProjectSettings, openSection } from './helpers'
 
 // Политики конвейера (add-policy-presets): авто-merge по политике проекта
 // и отложенный merge по защищённому пути. Fake SCM отдаёт diff с путём
@@ -38,7 +38,7 @@ test('включённый авто-merge мержит задачу без кн�
   await savePolicy(page)
   await expect(policyRow(page, 'Авто-merge после review')).toContainText('переопределено')
 
-  await page.goto('/#/epics')
+  await openSection(page, 'Epic’и')
   await createEpic(page, `Epic automerge ${stamp}`)
   await addTask(page, taskTitle)
   await page.getByRole('button', { name: 'Запустить' }).click()
@@ -65,7 +65,7 @@ test('защищённый путь откладывает merge, деталка
   await pathsRow.getByPlaceholder('infra/**, **/*.sql').fill('e2e')
   await savePolicy(page)
 
-  await page.goto('/#/epics')
+  await openSection(page, 'Epic’и')
   await createEpic(page, `Epic protected ${stamp}`)
   await addTask(page, taskTitle)
   await page.getByRole('button', { name: 'Запустить' }).click()

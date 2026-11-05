@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { HTTP_PORT, addTask, createEpic, createProject, expectNodeStatus, login, node, openProjectSettings } from './helpers'
+import { HTTP_PORT, addTask, createEpic, createProject, expectNodeStatus, login, node, openProjectSettings, openSection } from './helpers'
 
 // Публикация окружений (implement-deployment): auto-деплой после merge
 // с Deploy → Verify и провал с паузой и возобновлением.
@@ -35,7 +35,7 @@ test('merge запускает auto-публикацию: Deploy → Verify, с�
     verifyCmd: 'true',
   })
 
-  await page.goto('/#/epics')
+  await openSection(page, 'Epic’и')
   await createEpic(page, `Epic deploy ${stamp}`)
   await addTask(page, taskTitle)
   await page.getByRole('button', { name: 'Запустить' }).click()
@@ -78,8 +78,9 @@ test('провал Verify: публикация failed, окружение на 
   await expect(card.locator('.env-paused')).toBeVisible()
   await expect(card.locator('.env-detail')).toContainText('health-check')
 
-  // Эскалация DEPLOY_FAILED видна в «Требует внимания» и ведёт к проектам.
-  await page.goto('/#/tasks')
+  // Эскалация DEPLOY_FAILED видна в «Требует внимания» задач проекта и
+  // ведёт к его окружениям.
+  await openSection(page, 'Задачи')
   const att = page.locator('.att-card', { hasText: 'DEPLOY_FAILED' })
   await expect(att).toBeVisible()
   await att.click()

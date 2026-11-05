@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { createProject, expectNodeStatus, login, node } from './helpers'
+import { createProject, expectNodeStatus, login, node, openProject } from './helpers'
 import { LLM_URL } from './stand'
 
 // Исследование продукта (add-product-discovery): интервью, анализ
@@ -337,8 +337,15 @@ test('искажённая цитата уходит в отброшенное, 
 
       // Роль в проекте консоль узнаёт отдельным запросом участников. Пока
       // ответа нет, кнопок нет ни у кого, поэтому отрицательные проверки
-      // идут после него.
-      const members = mp.waitForResponse((resp) => resp.url().endsWith(`/api/v1/projects/${pid}/members`) && resp.ok())
+      // идут после него. Разделы проекта видны только в проекте: участник
+      // входит в него из списка «Проекты», и обзор проекта спрашивает
+      // участников своим запросом. Его ответ дожидается отдельно, чтобы
+      // ожидание ниже поймало именно запрос «Исследования».
+      const isMembers = (resp: { url(): string; ok(): boolean }) => resp.url().endsWith(`/api/v1/projects/${pid}/members`) && resp.ok()
+      const overviewMembers = mp.waitForResponse(isMembers)
+      await openProject(mp, project)
+      await overviewMembers
+      const members = mp.waitForResponse(isMembers)
       await openDiscovery(mp)
       await members
       await expect(mp.locator('.page-head .sub')).toHaveText(`${project} · только просмотр`)

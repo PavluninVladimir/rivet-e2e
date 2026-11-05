@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { addTask, createEpic, createProject, expectNodeStatus, login, node } from './helpers'
+import { addTask, createEpic, createProject, expectNodeStatus, login, node, openSection } from './helpers'
 
 // Представление «Команда» (add-team-visibility): реестр активных сессий с
 // последним шагом, поиск по истории, пересечения работ по общим файлам.
@@ -19,7 +19,7 @@ test('реестр показывает активную сессию, поис�
 
   // Пока сессия держится открытой — реестр показывает её и последний шаг:
   // запись файла перед паузой.
-  await page.goto('/#/team')
+  await openSection(page, 'Команда')
   const row = page.locator('.sess-row', { hasText: taskTitle })
   await expect(row).toBeVisible({ timeout: 15_000 })
   await expect(page.locator('.sess-files', { hasText: 'сейчас:' })).toContainText('write_file e2e-result.txt')
@@ -58,7 +58,7 @@ test('две задачи с общим файлом дают предупреж
   await page.getByRole('button', { name: 'Запустить' }).click()
 
   // Плашки пересечений в реестре «Команды» у обеих сессий.
-  await page.goto('/#/team')
+  await openSection(page, 'Команда')
   await expect(page.locator('.budget-pause', { hasText: 'Пересечение с task-' }).first())
     .toBeVisible({ timeout: 20_000 })
   await expect(page.locator('.budget-pause')).toHaveCount(2)
