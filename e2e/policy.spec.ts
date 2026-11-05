@@ -80,7 +80,8 @@ test('защищённый путь откладывает merge, деталка
   await expect(drawer.locator('.tl')).toContainText('merge отложен политикой')
 
   // Политика доехала до агента (add-policy-delivery): защищённый путь и
-  // версия политики видны в транскрипте coding-сессии.
+  // версия политики видны в транскрипте coding-сессии (fake-llm первым ходом
+  // повторяет строку политики из задания).
   const coding = drawer.locator('.sess-row', { hasText: 'CODING' }).first()
   await coding.click()
   await expect(drawer.locator('.sess-term')).toContainText('Учитываю политику', { timeout: 20_000 })

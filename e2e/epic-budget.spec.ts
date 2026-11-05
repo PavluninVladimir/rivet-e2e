@@ -2,9 +2,11 @@ import { expect, test } from '@playwright/test'
 import { addTask, createEpic, createProject, expectNodeStatus, login, node } from './helpers'
 
 // Бюджет Epic (add-cost-transparency): маленький бюджет исчерпывается первой
-// же coding-стадией (fake-claude отчитывается ~100k токенов). Следующая
-// стадия, сессия тестировщика (add-agent-roles), не назначается, дашборд
-// показывает плашку; поднятие бюджета возобновляет test и review.
+// же coding-стадией. Агент Rivet делает в ней пять ходов, fake-llm на каждый
+// отчитывается 1200+300·ход токенов входа и 80 выхода: около 9 тыс. токенов
+// на стадию против бюджета в 1000. Следующая стадия, сессия тестировщика
+// (add-agent-roles), не назначается, дашборд показывает плашку; поднятие
+// бюджета возобновляет test и review.
 test('бюджет Epic останавливает назначения и снимается поднятием', async ({ page }) => {
   await login(page)
   const stamp = Date.now()

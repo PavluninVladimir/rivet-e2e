@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test'
 import { addTask, createEpic, createProject, expectNodeStatus, login, node } from './helpers'
 
-// Полный цикл (2.3): запуск Epic, fake-runner доводит задачу до review,
+// Полный цикл (2.3): запуск Epic, агент Rivet на runner'ах стенда (модель —
+// fake-llm) доводит задачу до review,
 // merge кнопкой в UI, done и 100% без перезагрузки страницы (SSE).
 test('задача проходит конвейер до merge кнопкой', async ({ page }) => {
   await login(page)

@@ -3,9 +3,10 @@ import { expect, test, type Page } from '@playwright/test'
 import { addTask, createEpic, createProject, expectNodeStatus, login, node } from './helpers'
 
 // Обзор проекта для руководителя (add-project-lead-view): прогон Epic'а на
-// fake-агентах даёт прогресс, пропускную способность и расход, просроченная
-// целевая дата переводит Epic в «под риском», эскалация попадает в «Нужны
-// решения», отчёт за период скачивается тем же текстом, что в предпросмотре.
+// агенте Rivet поверх fake-llm даёт прогресс, пропускную способность и
+// расход, просроченная целевая дата переводит Epic в «под риском»,
+// эскалация попадает в «Нужны решения», отчёт за период скачивается тем же
+// текстом, что в предпросмотре.
 
 async function openOverview(page: Page) {
   await page.locator('#sidebar').getByRole('button', { name: 'Обзор', exact: true }).click()
@@ -62,7 +63,8 @@ test('обзор показывает прогресс, пропускную с�
   await expect(stat('Задач завершено')).toHaveText('1')
   // Одна задача за 7 суток: 0,14 в сутки, на экране с одним знаком.
   await expect(stat('Пропускная способность')).toHaveText('0,1/сут')
-  // Fake-агенты сообщают стоимость: расход в долларах, не ноль.
+  // У моделей стенда есть цены в каталоге (e2e-stand.sh), агент Rivet
+  // считает стоимость сессий: расход в долларах, не ноль.
   await expect(stat('Расход за период')).toHaveText(/^\$\d+\.\d{2}$/)
   await expect(stat('Расход за период')).not.toHaveText('$0.00')
 
@@ -82,7 +84,8 @@ test('обзор показывает прогресс, пропускную с�
   await expect(team.locator('tr[data-role="developer"] td').nth(3)).not.toHaveText('0')
   const money = page.locator('.panel', { has: page.getByRole('heading', { name: 'Деньги' }) })
   await expect(money.locator('tr', { hasText: 'Разработчик' })).toContainText('$')
-  await expect(money.locator('tr', { hasText: 'claude-fake-1' })).toContainText('$')
+  // Все сессии проекта идут на модели агента по умолчанию.
+  await expect(money.locator('tr', { hasText: 'fake-small' })).toContainText('$')
 
   // Целевая дата вчера: прогноз позже неё, Epic под риском с причиной late.
   const due = new Date(Date.now() - 24 * 3600_000)
@@ -112,7 +115,8 @@ test('эскалация по задаче попадает в «Нужны ре
   await createEpic(page, epic)
   await addTask(page, taskTitle, 'Сценарий эскалации [e2e-block]: без ответа человека не продолжать.')
   await page.getByRole('button', { name: 'Запустить' }).click()
-  // Fake-агент выводит BLOCKED, по задаче открывается эскалация.
+  // Агент по метке [e2e-block] задаёт вопрос человеку, по задаче
+  // открывается эскалация.
   await expect(page.locator('.att-card', { hasText: 'BLOCKED' })).toBeVisible({ timeout: 90_000 })
 
   await openOverview(page)
