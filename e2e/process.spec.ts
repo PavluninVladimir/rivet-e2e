@@ -2,8 +2,10 @@ import { expect, test } from '@playwright/test'
 import { addTask, createEpic, createProject, expectNodeStatus, login, node } from './helpers'
 
 // Процесс проекта (add-process-model): владелец задаёт через API шаг review с
-// двумя агентами-ревьюерами разных моделей, задача проходит конвейер по
-// этому процессу, в событиях один переход с двумя вердиктами, merge кнопкой.
+// двумя участниками — агентом Rivet на разных моделях подключения стенда
+// e2e-llm. Задача проходит конвейер по этому процессу, в событиях один
+// переход с двумя вердиктами, merge кнопкой. Модель участника — идентификатор
+// модели каталога, подключение находит сервер.
 test('процесс с двумя ревьюерами доводит задачу до merge', async ({ page }) => {
   await login(page)
   const stamp = Date.now()
@@ -23,8 +25,8 @@ test('процесс с двумя ревьюерами доводит зада�
           {
             id: 'review', kind: 'review', mode: 'parallel', require: 'all',
             participants: [
-              { agent: { kind: 'fake', model: 'fake-small' } },
-              { agent: { kind: 'fake', model: 'fake-large' } },
+              { agent: { kind: 'rivet', model: 'fake-small' } },
+              { agent: { kind: 'rivet', model: 'fake-large' } },
             ],
           },
           { id: 'merge', kind: 'merge' },

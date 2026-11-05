@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { createProject, expectNodeStatus, login, node } from './helpers'
+import { LLM_URL } from './stand'
 
 // Исследование продукта (add-product-discovery): интервью, анализ
 // Аналитиком на fake-llm, персоны и потребности с цитатами, бэклог с
@@ -12,7 +13,6 @@ import { createProject, expectNodeStatus, login, node } from './helpers'
 // [e2e-slow] задерживает ответы на 3 секунды, чтобы был виден ход анализа,
 // [e2e-bad-quote] искажает цитату первой потребности интервью.
 
-const LLM_URL = `http://localhost:${process.env.E2E_LLM_PORT ?? '8283'}/v1`
 const SLOW = '[e2e-slow]'
 const BAD_QUOTE = '[e2e-bad-quote]'
 

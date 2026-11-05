@@ -1,8 +1,9 @@
 import { expect, test } from '@playwright/test'
 import { addTask, createEpic, createProject, expectNodeStatus, login, node } from './helpers'
 
-// Эскалация (2.4): fake-агент блокируется вопросом, карточка attention
-// появляется, ответ через деталку возвращает задачу в работу до done.
+// Эскалация (2.4): агент Rivet по метке [e2e-block] задаёт вопрос человеку
+// инструментом ask_human (сценарий fake-llm), карточка attention появляется,
+// ответ через деталку возвращает задачу в работу до done.
 test('blocked-задача эскалируется и возвращается в работу после ответа', async ({ page }) => {
   await login(page)
   const stamp = Date.now()
@@ -14,7 +15,7 @@ test('blocked-задача эскалируется и возвращается 
 
   await page.getByRole('button', { name: 'Запустить' }).click()
 
-  // Агент выводит BLOCKED, на дашборде появляется карточка attention.
+  // Вопрос агента блокирует задачу, на дашборде появляется карточка attention.
   const attCard = page.locator('.att-card', { hasText: 'BLOCKED' })
   await expect(attCard).toBeVisible({ timeout: 90_000 })
   await attCard.click()

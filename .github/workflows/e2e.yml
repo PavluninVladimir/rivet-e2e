@@ -6,6 +6,11 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Токену workflow хватает чтения: прогон ничего не публикует. Без блока
+# права зависели бы от настроек репозитория.
+permissions:
+  contents: read
+
 jobs:
   e2e:
     runs-on: ubuntu-latest
@@ -33,18 +38,69 @@ jobs:
           docker run -d --name s3 -p 9000:9000
           -e RUSTFS_ACCESS_KEY=rivet -e RUSTFS_SECRET_KEY=rivetsecret
           rustfs/rustfs:1.0.3 /data
+      # Ветки rivet и rivet-web: одноимённая ветке e2e, если она есть, иначе
+      # main. Так изменение, которое идёт сразу в несколько репозиториев
+      # (например add-native-agent), проверяется целиком в одном прогоне.
+      # Имя ветки идёт только через env и в кавычках: в нём допустимы
+      # shell-символы. Поиск по точному refs/heads/<имя>: без префикса
+      # ls-remote сравнивает хвост пути и принял бы feature/x за x. Код 2 —
+      # ветки нет (берётся main), любой другой ненулевой — сеть или доступ,
+      # прогон падает, а не идёт молча против main. Checkout по найденному
+      # SHA: прогон и summary ссылаются на один и тот же коммит.
+      - name: Ветки rivet и rivet-web
+        id: refs
+        env:
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: |
+          echo "### Ветки прогона" >> "$GITHUB_STEP_SUMMARY"
+          for repo in rivet rivet-web; do
+            url="https://github.com/PavluninVladimir/$repo.git"
+            code=0
+            out=$(git ls-remote --exit-code --heads "$url" "refs/heads/$BRANCH") || code=$?
+            case "$code" in
+              0) ref="$BRANCH" ;;
+              2)
+                ref=main
+                code=0
+                out=$(git ls-remote --exit-code --heads "$url" refs/heads/main) || code=$?
+                if [ "$code" -ne 0 ]; then
+                  echo "::error::$repo: git ls-remote main завершился с кодом $code"
+                  exit 1
+                fi
+                ;;
+              *)
+                echo "::error::$repo: git ls-remote завершился с кодом $code (сеть или доступ, а не отсутствие ветки)"
+                exit 1
+                ;;
+            esac
+            sha=$(printf '%s\n' "$out" | head -n 1 | cut -f1)
+            if [ -z "$sha" ]; then
+              echo "::error::$repo: ls-remote не вернул SHA ветки $ref"
+              exit 1
+            fi
+            echo "$repo -> $ref ($sha)"
+            echo "${repo//-/_}=$sha" >> "$GITHUB_OUTPUT"
+            echo "- \`$repo\`: \`$ref\` \`$sha\`" >> "$GITHUB_STEP_SUMMARY"
+          done
       # Структура как локально: rivet со вложенными rivet-web и rivet-e2e.
+      # Токен в .git/config не сохраняется: дальше исполняется код из этих
+      # репозиториев (install-скрипты npm, стенд), ему токен не нужен.
       - uses: actions/checkout@v7
         with:
           repository: PavluninVladimir/rivet
+          ref: ${{ steps.refs.outputs.rivet }}
           path: rivet
+          persist-credentials: false
       - uses: actions/checkout@v7
         with:
           repository: PavluninVladimir/rivet-web
+          ref: ${{ steps.refs.outputs.rivet_web }}
           path: rivet/rivet-web
+          persist-credentials: false
       - uses: actions/checkout@v7
         with:
           path: rivet/rivet-e2e
+          persist-credentials: false
       - uses: actions/setup-go@v7
         with:
           go-version-file: rivet/rivet-service/go.mod

@@ -2,7 +2,8 @@ import { expect, test } from '@playwright/test'
 import { addTask, createEpic, createProject, expectNodeStatus, login, node, openProjectSettings } from './helpers'
 
 // Видимость сессий (add-session-visibility): в деталке завершённой стадии
-// открывается сохранённый транскрипт, секрет из вывода агента замаскирован.
+// открывается сохранённый транскрипт агента Rivet (текст модели и шаги
+// инструментов), секрет из текста модели замаскирован.
 test('транскрипт завершённой стадии открывается, секрет замаскирован', async ({ page }) => {
   await login(page)
   const stamp = Date.now()
@@ -25,8 +26,11 @@ test('транскрипт завершённой стадии открывае�
   await coding.click()
   const term = drawer.locator('.sess-term')
   await expect(term).toContainText('Реализую задачу')
+  // Шаги инструментов агентского цикла тоже в транскрипте.
+  await expect(term).toContainText('▶ write_file e2e-result.txt')
 
-  // Секрет fake-агента (export GH_TOKEN=ghp_…) заменён маской и не утёк.
+  // Секрет из первого хода fake-llm (export GH_TOKEN=ghp_…) заменён маской
+  // и не утёк.
   await expect(term).toContainText('***')
   expect(await term.textContent()).not.toContain('ghp_')
 

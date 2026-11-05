@@ -3,7 +3,8 @@ import { addTask, createEpic, createProject, expectNodeStatus, login, node } fro
 
 // Представление «Команда» (add-team-visibility): реестр активных сессий с
 // последним шагом, поиск по истории, пересечения работ по общим файлам.
-// [e2e-slow] держит coding-сессию fake-claude открытой ~6 секунд.
+// [e2e-slow]: агент Rivet после записи файла выполняет `sleep 6` (сценарий
+// fake-llm), coding-сессия держится открытой ~6 секунд.
 
 test('реестр показывает активную сессию, поиск находит её после завершения', async ({ page }) => {
   await login(page)
@@ -16,11 +17,12 @@ test('реестр показывает активную сессию, поис�
   const epicHash = await page.evaluate(() => location.hash)
   await page.getByRole('button', { name: 'Запустить' }).click()
 
-  // Пока сессия держится открытой — реестр показывает её и последний шаг.
+  // Пока сессия держится открытой — реестр показывает её и последний шаг:
+  // запись файла перед паузой.
   await page.goto('/#/team')
   const row = page.locator('.sess-row', { hasText: taskTitle })
   await expect(row).toBeVisible({ timeout: 15_000 })
-  await expect(page.locator('.sess-files', { hasText: 'сейчас:' })).toContainText('Edit e2e-result.txt')
+  await expect(page.locator('.sess-files', { hasText: 'сейчас:' })).toContainText('write_file e2e-result.txt')
 
   // Задача доезжает до REVIEW, сессия закрывается — поиск по уникальному
   // слову названия находит сессию с итогом.
@@ -77,11 +79,9 @@ test('две задачи с общим файлом дают предупреж
   await expect(page.locator('#drawer .tl')).toContainText('пересечение работ с task-')
   await expect(page.locator('#drawer .tl')).toContainText('агент предупреждён')
 
-  // Предупреждение доехало до агента: оно видно в транскрипте его сессии
-  // (fake-claude печатает полученный обратным каналом текст в поток).
-  const coding = page.locator('#drawer .sess-row', { hasText: 'CODING' }).first()
-  await expect(coding).toBeVisible()
-  await coding.click()
-  await expect(page.locator('#drawer .sess-term'))
-    .toContainText('Предупреждение Rivet', { timeout: 20_000 })
+  // Предупреждение доехало до модели: агентский цикл кладёт его в диалог
+  // следующим ходом (после паузы [e2e-slow]) и отмечает шагом сессии.
+  // В транскрипт текст контекста не пишется, а fake-llm его не повторяет,
+  // поэтому доставку видно только по этому шагу в timeline.
+  await expect(page.locator('#drawer .tl')).toContainText('агенту передан контекст', { timeout: 20_000 })
 })

@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 import { addTask, createEpic, createProject, expectNodeStatus, login, openProjectSettings } from './helpers'
 
 // Редактор процесса (add-process-editor, add-process-graph-editor): шаг
-// prompt проходит fake-агент с маркером вердикта; владелец правит процесс
+// prompt исполняет агент Rivet, вердикт — вызов finish; владелец правит процесс
 // графом в настройках проекта; ограничения установки не дают сохранить
 // процесс без человека на review, ошибка открывает окно шага.
 
@@ -38,7 +38,7 @@ test('шаг prompt исполняется агентом, процесс пра
   await createEpic(page, `Epic editor ${stamp}`)
   await addTask(page, taskTitle)
   await page.getByRole('button', { name: 'Запустить' }).click()
-  // review → prompt (fake-агент отвечает VERDICT: OK) → ожидание merge.
+  // review → prompt (агент Rivet завершает шаг вердиктом ok) → ожидание merge.
   await expectNodeStatus(page, taskTitle, 'REVIEW')
   await expect.poll(async () => {
     const events: Array<{ Payload: Record<string, unknown> }> =
