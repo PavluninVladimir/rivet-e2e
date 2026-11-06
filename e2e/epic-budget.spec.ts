@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { addTask, createEpic, createProject, expectNodeStatus, login, node } from './helpers'
+import { addTask, createEpic, createProject, expectNodeStatus, login, node, openSection } from './helpers'
 
 // Бюджет Epic (add-cost-transparency): маленький бюджет исчерпывается первой
 // же coding-стадией. Агент Rivet делает в ней пять ходов, fake-llm на каждый
@@ -37,7 +37,7 @@ test('бюджет Epic останавливает назначения и сн�
   // событие планировщика в event log. Без этого ожидания бюджет поднимается
   // раньше первого прохода планировщика, и остановка не проверяется.
   const dashboard = page.url()
-  await page.goto('/#/activity')
+  await openSection(page, 'Активность')
   await expect(page.locator('.act-row', { hasText: 'бюджет Epic исчерпан' })).toBeVisible({ timeout: 20_000 })
   await page.goto(dashboard)
   await expectNodeStatus(page, taskTitle, 'TESTING')

@@ -35,8 +35,41 @@ export async function createProject(page: Page, name: string): Promise<void> {
   await page.getByRole('button', { name: 'Далее' }).click()   // → проверки
   await page.getByRole('button', { name: 'Далее' }).click()   // → подтверждение
   await page.getByRole('button', { name: 'Создать проект' }).click()
-  // Создание делает проект текущим и открывает список его Epic'ов.
+  // Создание входит в проект и открывает список его Epic'ов.
   await expect(page.getByRole('button', { name: 'Новый Epic' })).toBeVisible()
+}
+
+// Навигация (add-project-navigation): разделы проекта видны только в
+// проекте, адрес экрана проекта — #/p/<проект>/<раздел>.
+
+// Вход в проект из списка «Проекты»: открывается обзор проекта.
+export async function openProject(page: Page, name: string): Promise<void> {
+  await page.goto('/#/projects')
+  await page.getByRole('link', { name, exact: true }).click()
+  await expect(projectSections(page)).toBeVisible()
+}
+
+// Разделы текущего проекта в боковой панели.
+export function projectSections(page: Page) {
+  return page.locator('#sidebar').getByRole('navigation', { name: 'Разделы проекта' })
+}
+
+// Пункт раздела по подписи: у «Задач» к подписи добавляется счётчик эскалаций.
+export function sectionItem(page: Page, label: string) {
+  const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return projectSections(page).getByRole('button', { name: new RegExp(`^${escaped}\\s*\\d*$`) })
+}
+
+// Переход к разделу текущего проекта через боковую панель.
+export async function openSection(page: Page, label: string): Promise<void> {
+  await sectionItem(page, label).click()
+}
+
+// Проект текущей страницы из адреса.
+export function projectFromURL(url: string): string {
+  const id = /#\/p\/([^/?]+)/.exec(url)?.[1]
+  if (!id) throw new Error(`в адресе нет проекта: ${url}`)
+  return decodeURIComponent(id)
 }
 
 // Страница настроек проекта: открывается кнопкой из списка, затем нужная

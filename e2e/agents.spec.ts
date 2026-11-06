@@ -2,7 +2,7 @@ import { execFile } from 'node:child_process'
 import path from 'node:path'
 import { promisify } from 'node:util'
 import { expect, test, type Page } from '@playwright/test'
-import { addTask, createEpic, createProject, expectNodeStatus, login, node, openProjectSettings } from './helpers'
+import { addTask, createEpic, createProject, expectNodeStatus, login, node, openProjectSettings, openSection } from './helpers'
 import { SERVICE_DIR, STAND, runnerSandbox } from './stand'
 
 // Агент Rivet (add-native-agent): единственный агент установки, агентский
@@ -198,7 +198,7 @@ test('агент Rivet: модель по умолчанию и лимиты, ru
 
     // Задача: review идёт на явной модели участника, coding — на модели
     // агента по умолчанию.
-    await page.goto('/#/epics')
+    await openSection(page, 'Epic’и')
     await createEpic(page, `Epic agents ${stamp}`)
     const taskTitle = `Агент Rivet ${stamp}`
     await addTask(page, taskTitle)
@@ -219,7 +219,7 @@ test('агент Rivet: модель по умолчанию и лимиты, ru
     // Ключ подключения уходит runner'у по режиму секретов (endpoint
     // назначения) и нигде не всплывает: ни в транскриптах coding и review,
     // ни в событиях задачи, ни в ответах API runner'ов, агента и подключений.
-    const taskId = /#\/epic\/[^/]+\/task\/([^/?]+)/.exec(page.url())?.[1]
+    const taskId = /\/epic\/[^/]+\/task\/([^/?]+)/.exec(page.url())?.[1]
     expect(taskId, 'адрес деталки задачи').toBeTruthy()
     let withTranscript: Array<{ id: string; stage: string; has_transcript: boolean }> = []
     await expect.poll(async () => {

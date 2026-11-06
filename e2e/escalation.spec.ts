@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { addTask, createEpic, createProject, expectNodeStatus, login, node } from './helpers'
+import { addTask, createEpic, createProject, expectNodeStatus, login, node, sectionItem } from './helpers'
 
 // Эскалация (2.4): агент Rivet по метке [e2e-block] задаёт вопрос человеку
 // инструментом ask_human (сценарий fake-llm), карточка attention появляется,
@@ -9,7 +9,8 @@ test('blocked-задача эскалируется и возвращается 
   const stamp = Date.now()
   const taskTitle = `Эскалация ${stamp}`
 
-  await createProject(page, `Esc ${stamp}`)
+  const project = `Esc ${stamp}`
+  await createProject(page, project)
   await createEpic(page, `Epic esc ${stamp}`)
   await addTask(page, taskTitle, 'Сценарий эскалации [e2e-block]: без ответа человека не продолжать.')
 
@@ -18,6 +19,20 @@ test('blocked-задача эскалируется и возвращается 
   // Вопрос агента блокирует задачу, на дашборде появляется карточка attention.
   const attCard = page.locator('.att-card', { hasText: 'BLOCKED' })
   await expect(attCard).toBeVisible({ timeout: 90_000 })
+
+  // Счётчики эскалаций по проектам (add-project-navigation): у «Задач» —
+  // эскалации этого проекта, в списке проектов — у самого проекта.
+  await expect(sectionItem(page, 'Задачи').locator('.count')).toHaveText('1')
+  const dashboard = page.url()
+  await page.goto('/#/projects')
+  await expect(page.locator('tr', { hasText: project }).locator('td[data-escalations]')).toHaveAttribute('data-escalations', '1')
+  // Из другого проекта эскалация видна у «← Все проекты», а «Задачи» её не
+  // считают.
+  await createProject(page, `Esc other ${stamp}`)
+  await expect(page.locator('.side-back .count')).toBeVisible()
+  await expect(sectionItem(page, 'Задачи').locator('.count')).toHaveCount(0)
+  await page.goto(dashboard)
+  await expect(attCard).toBeVisible()
   await attCard.click()
 
   const drawer = page.locator('#drawer')
