@@ -94,3 +94,40 @@ test('страница настроек показывает всё про пр�
   await page.reload()
   await expect(page.getByPlaceholder('Команда').last()).toHaveValue('true')
 })
+
+// Gitea и Forgejo (add-gitea-adapter): хостинг выбирается в мастере,
+// инстанс self-hosted задаётся адресом. Стенд работает на fake-хостинге,
+// поэтому проверка доступа проходит, а проект подключается к стенду и
+// хранится с провайдером fake: название «Gitea / Forgejo» в настройках и
+// списке проектов здесь не проверить, его покрывает юнит-тест консоли
+// providerLabel. Проверяется сводка мастера, где название берётся из выбора.
+test('мастер подключает проект на Gitea / Forgejo по адресу инстанса', async ({ page }) => {
+  await login(page)
+  const name = `Gitea ${Date.now()}`
+  await page.goto('/#/projects')
+  await page.getByRole('button', { name: 'Новый проект' }).click()
+  await page.getByPlaceholder('Название проекта').fill(name)
+  await page.getByLabel('Хостинг').selectOption('gitea')
+  await expect(page.getByPlaceholder(/URL репозитория/)).toHaveAttribute('placeholder', /gitea\.example\.com/)
+
+  // Режим «создать»: у Gitea нет облачного инстанса, без адреса проверка недоступна.
+  await page.getByLabel('Репозиторий', { exact: true }).selectOption('create')
+  await page.getByPlaceholder('Токен доступа к хостингу').fill(E2E_TOKEN)
+  await expect(page.getByRole('button', { name: 'Проверить доступ' })).toBeDisabled()
+  await page.getByPlaceholder(/URL инстанса/).fill('https://fake.local')
+  await expect(page.getByRole('button', { name: 'Проверить доступ' })).toBeEnabled()
+
+  // Подключение существующего: хвост адреса страницы Gitea отрезается.
+  await page.getByLabel('Репозиторий', { exact: true }).selectOption('connect')
+  await page.getByPlaceholder(/URL репозитория/).fill('https://fake.local/e2e/demo/src/branch/main')
+  await page.getByPlaceholder('Токен доступа к хостингу').fill(E2E_TOKEN)
+  await page.getByRole('button', { name: 'Проверить доступ' }).click()
+  await expect(page.locator('.modal.wizard .f-note.ok')).toContainText('e2e/demo')
+  await page.getByRole('button', { name: 'Далее' }).click()
+  await page.getByRole('button', { name: 'Далее' }).click()
+  await expect(page.locator('.modal.wizard .meta-grid')).toContainText('Gitea / Forgejo')
+  await page.getByRole('button', { name: 'Создать проект' }).click()
+  await expect(page.getByRole('button', { name: 'Новый Epic' })).toBeVisible()
+  await page.goto('/#/projects')
+  await expect(page.locator('tr', { hasText: name })).toContainText('e2e/demo')
+})
