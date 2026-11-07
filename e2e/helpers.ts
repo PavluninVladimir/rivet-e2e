@@ -1,5 +1,5 @@
 import { expect, type Page } from '@playwright/test'
-import { STAND } from './stand'
+import { LLM_URL, STAND } from './stand'
 
 // Токен стенда намеренно длинный: короткий бэкенд не показывает вовсе,
 // и проверка «токен не виден в интерфейсе» стала бы бессмысленной.
@@ -23,12 +23,14 @@ export async function login(page: Page): Promise<void> {
 
 // Проект создаётся пошаговым мастером: репозиторий (с проверкой доступа),
 // проверки, подтверждение. Стенд работает на fake-хостинге, поэтому
-// проверка проходит с любым токеном.
-export async function createProject(page: Page, name: string): Promise<void> {
+// проверка проходит с любым токеном. repo — репозиторий стенда: e2e/demo
+// (пустой) или e2e/arch (README и описание архитектуры демо-CRM, снимок
+// архитектуры читается из настоящей версии).
+export async function createProject(page: Page, name: string, repo = 'e2e/demo'): Promise<void> {
   await page.goto('/#/projects')
   await page.getByRole('button', { name: 'Новый проект' }).click()
   await page.getByPlaceholder('Название проекта').fill(name)
-  await page.getByPlaceholder(/URL репозитория/).fill('https://fake.local/e2e/demo')
+  await page.getByPlaceholder(/URL репозитория/).fill(`https://fake.local/${repo}`)
   await page.getByPlaceholder('Токен доступа к хостингу').fill(E2E_TOKEN)
   await page.getByRole('button', { name: 'Проверить доступ' }).click()
   await expect(page.getByRole('button', { name: 'Далее' })).toBeEnabled()
@@ -107,4 +109,49 @@ export function node(page: Page, title: string) {
 
 export async function expectNodeStatus(page: Page, title: string, status: string, timeout = 90_000) {
   await expect(node(page, title).locator('.st')).toHaveText(status, { timeout })
+}
+
+// Исследование (add-product-discovery): общие шаги сценариев исследования
+// и цикла разработки. withFakeModel — настройка стенда через API, а не
+// шаг пользователя: модель Аналитику даёт администратор установки.
+
+// Модель для Аналитика и Тимлида: подключение к fake-llm и модель
+// декомпозиции из него. Своей модели у Аналитика Веры и у шаблона роли нет,
+// поэтому анализ идёт на модели Тимлида. После сценария модель
+// декомпозиции возвращается к прежней, подключение удаляется: остальные
+// сценарии ждут стенд без модели.
+export async function withFakeModel(page: Page, stamp: number, body: () => Promise<void>) {
+  const conn = `disc${stamp}`
+  const before = await (await page.request.get('/api/v1/system/planner')).json()
+  let r = await page.request.put(`/api/v1/system/connections/${conn}`, {
+    data: { name: 'Fake LLM', kind: 'local', api: 'openai', base_url: LLM_URL, key: 'fake-key' },
+  })
+  expect(r.ok()).toBeTruthy()
+  r = await page.request.post(`/api/v1/system/connections/${conn}/discover`)
+  expect(r.ok()).toBeTruthy()
+  r = await page.request.put('/api/v1/system/planner', { data: { connection_id: conn, model: 'fake-planner' } })
+  expect(r.ok()).toBeTruthy()
+  try {
+    await body()
+  } finally {
+    // soft: провал уборки виден в отчёте и не прячет ошибку самого сценария.
+    const prev = before?.source === 'catalog' ? { connection_id: before.connection_id, model: before.model } : {}
+    r = await page.request.put('/api/v1/system/planner', { data: prev })
+    expect.soft(r.ok(), 'модель декомпозиции возвращена').toBeTruthy()
+    r = await page.request.delete(`/api/v1/system/connections/${conn}`)
+    expect.soft(r.ok(), 'подключение fake-llm удалено').toBeTruthy()
+  }
+}
+
+// Интервью вставкой текста. Штамп в реплике интервьюера делает текст
+// уникальным: кэш конспектов общий для установки и ключ у него по тексту.
+export async function addInterviewText(page: Page, title: string, role: string, text: string) {
+  await page.getByRole('button', { name: 'Добавить интервью' }).click()
+  const modal = page.locator('.modal', { has: page.getByRole('heading', { name: 'Новое интервью' }) })
+  await modal.locator('.tabs').getByRole('button', { name: 'Текстом' }).click()
+  await modal.getByLabel('Название').fill(title)
+  await modal.getByLabel('Роль респондента').fill(role)
+  await modal.getByLabel('Текст интервью').fill(text)
+  await modal.getByRole('button', { name: 'Добавить' }).click()
+  await expect(modal).toHaveCount(0)
 }

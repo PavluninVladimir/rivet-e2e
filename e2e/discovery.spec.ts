@@ -1,6 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { createProject, expectNodeStatus, login, node, openProject } from './helpers'
-import { LLM_URL } from './stand'
+import { addInterviewText, createProject, expectNodeStatus, login, node, openProject, withFakeModel } from './helpers'
 
 // Исследование продукта (add-product-discovery): интервью, анализ
 // Аналитиком на fake-llm, персоны и потребности с цитатами, бэклог с
@@ -23,50 +22,9 @@ async function projectId(page: Page, name: string): Promise<string> {
   return id!
 }
 
-// Модель для Аналитика и Тимлида: подключение к fake-llm и модель
-// декомпозиции из него. Своей модели у Аналитика Веры и у шаблона роли нет,
-// поэтому анализ идёт на модели Тимлида. После сценария модель
-// декомпозиции возвращается к прежней, подключение удаляется: остальные
-// сценарии ждут стенд без модели.
-async function withFakeModel(page: Page, stamp: number, body: () => Promise<void>) {
-  const conn = `disc${stamp}`
-  const before = await (await page.request.get('/api/v1/system/planner')).json()
-  let r = await page.request.put(`/api/v1/system/connections/${conn}`, {
-    data: { name: 'Fake LLM', kind: 'local', api: 'openai', base_url: LLM_URL, key: 'fake-key' },
-  })
-  expect(r.ok()).toBeTruthy()
-  r = await page.request.post(`/api/v1/system/connections/${conn}/discover`)
-  expect(r.ok()).toBeTruthy()
-  r = await page.request.put('/api/v1/system/planner', { data: { connection_id: conn, model: 'fake-planner' } })
-  expect(r.ok()).toBeTruthy()
-  try {
-    await body()
-  } finally {
-    // soft: провал уборки виден в отчёте и не прячет ошибку самого сценария.
-    const prev = before?.source === 'catalog' ? { connection_id: before.connection_id, model: before.model } : {}
-    r = await page.request.put('/api/v1/system/planner', { data: prev })
-    expect.soft(r.ok(), 'модель декомпозиции возвращена').toBeTruthy()
-    r = await page.request.delete(`/api/v1/system/connections/${conn}`)
-    expect.soft(r.ok(), 'подключение fake-llm удалено').toBeTruthy()
-  }
-}
-
 async function openDiscovery(page: Page) {
   await page.locator('#sidebar').getByRole('button', { name: 'Исследование', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Исследование', exact: true })).toBeVisible()
-}
-
-// Интервью вставкой текста. Штамп в реплике интервьюера делает текст
-// уникальным: кэш конспектов общий для установки и ключ у него по тексту.
-async function addInterviewText(page: Page, title: string, role: string, text: string) {
-  await page.getByRole('button', { name: 'Добавить интервью' }).click()
-  const modal = page.locator('.modal', { has: page.getByRole('heading', { name: 'Новое интервью' }) })
-  await modal.locator('.tabs').getByRole('button', { name: 'Текстом' }).click()
-  await modal.getByLabel('Название').fill(title)
-  await modal.getByLabel('Роль респондента').fill(role)
-  await modal.getByLabel('Текст интервью').fill(text)
-  await modal.getByRole('button', { name: 'Добавить' }).click()
-  await expect(modal).toHaveCount(0)
 }
 
 function section(page: Page, heading: RegExp) {
