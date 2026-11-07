@@ -1,5 +1,6 @@
-import { readFile } from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import type { Page } from '@playwright/test'
 
 // Порты и каталог e2e-стенда. Их же читает scripts/e2e-stand.sh из
 // rivet-service: E2E_HTTP_PORT (консоль и API), E2E_GRPC_PORT (runner'ы),
@@ -53,4 +54,18 @@ export async function runnerSandbox(id: string): Promise<boolean | undefined> {
   const open = log.includes('ВНИМАНИЕ: песочница недоступна')
   if (isolated && open) throw new Error(`runner ${id}: в журнале обе строки пробы песочницы`)
   return isolated ? true : open ? false : undefined
+}
+
+// issueRunnerToken выпускает через API токен регистрации для runner'ов ids
+// (пустой список привяжется к первому зарегистрированному) и кладёт секрет в
+// файл 0600 каталога стенда, как требует runner. Токен стенда выпущен
+// только для runner'ов стенда (add-runner-identity), поэтому сценарий с
+// собственным идентификатором выпускает себе свой. Возвращает путь файла.
+export async function issueRunnerToken(page: Page, name: string, ids: string[]): Promise<string> {
+  const res = await page.request.post('/api/v1/runner-tokens', { data: { name, runner_ids: ids } })
+  if (res.status() !== 201) throw new Error(`выпуск токена ${name}: ${res.status()} ${await res.text()}`)
+  const { secret } = await res.json() as { secret: string }
+  const file = path.join(STAND.dir, `token-${name}`)
+  await writeFile(file, secret + '\n', { mode: 0o600 })
+  return file
 }

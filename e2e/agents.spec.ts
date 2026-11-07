@@ -3,7 +3,7 @@ import path from 'node:path'
 import { promisify } from 'node:util'
 import { expect, test, type Page } from '@playwright/test'
 import { addTask, createEpic, createProject, expectNodeStatus, login, node, openProjectSettings, openSection } from './helpers'
-import { SERVICE_DIR, STAND, runnerSandbox } from './stand'
+import { SERVICE_DIR, STAND, issueRunnerToken, runnerSandbox } from './stand'
 
 // Агент Rivet (add-native-agent): единственный агент установки, агентский
 // цикл ведёт сам runner. Вкладка «Агент» правит модель по умолчанию из
@@ -72,8 +72,9 @@ test('агент Rivet: модель по умолчанию и лимиты, ru
     // Runner'ы стенда зарегистрированы (они стартуют фоном после rivetd).
     let agentRunners: Runner[] = []
     await expect.poll(async () => {
-      const list: Runner[] = await (await page.request.get('/api/v1/runners')).json()
-      agentRunners = list.filter((x) => x.Agent === 'rivet')
+      // Сразу после старта стенда runner'ов ещё нет, и список приходит null.
+      const list: Runner[] | null = await (await page.request.get('/api/v1/runners')).json()
+      agentRunners = (list ?? []).filter((x) => x.Agent === 'rivet')
       return agentRunners.map((x) => x.ID).sort()
     }, { timeout: 30_000 }).toEqual(AGENT_RUNNERS)
     // Флаг каждого runner'а совпадает с пробой песочницы из его журнала.
@@ -268,9 +269,11 @@ test('агент Rivet: модель по умолчанию и лимиты, ru
 
 // Сторонний агент (add-native-agent, задача 3.5): rivet-runner с другим
 // агентом не стартует вовсе, поэтому регистрацию с агентом claude-code
-// делает тестовый gRPC-клиент стенда (rivet-service/scripts/e2e-register)
-// с токеном регистрации стенда. Control plane отвечает FAILED_PRECONDITION,
-// пишет runner.rejected в журнал установки, и runner в список не попадает.
+// делает тестовый gRPC-клиент стенда (rivet-service/scripts/e2e-register).
+// Токен стенда выпущен только для его runner'ов (add-runner-identity),
+// поэтому сценарий выпускает себе токен на свой идентификатор. Control
+// plane отвечает FAILED_PRECONDITION, пишет runner.rejected в журнал
+// установки, и runner в список не попадает.
 test('регистрация runner’а со сторонним агентом отклоняется с событием runner.rejected', async ({ page }) => {
   // go run компилирует клиент: на холодном кеше это дольше обычного шага.
   test.setTimeout(240_000)
@@ -278,9 +281,10 @@ test('регистрация runner’а со сторонним агентом 
   const id = `e2e-cc-${Date.now()}`
   const status: { protocol_version: string } = await (await page.request.get('/api/v1/system/status')).json()
   expect(status.protocol_version).toBeTruthy()
+  const tokenFile = await issueRunnerToken(page, id, [id])
 
   const { stdout } = await promisify(execFile)('go', ['run', './scripts/e2e-register',
-    '-addr', `localhost:${STAND.grpcPort}`, '-token-file', path.join(STAND.dir, 'runner-token'),
+    '-addr', `localhost:${STAND.grpcPort}`, '-token-file', tokenFile,
     '-id', id, '-agent', 'claude-code', '-protocol', status.protocol_version,
   ], { cwd: SERVICE_DIR, timeout: 200_000 })
   const res = JSON.parse(stdout.trim().split('\n').pop() ?? '{}')
@@ -294,14 +298,16 @@ test('регистрация runner’а со сторонним агентом 
     rejected = (events ?? []).find((e) => e.Payload.runner_id === id)
     return !!rejected
   }, { timeout: 15_000 }).toBe(true)
-  expect(rejected!.Payload).toMatchObject({ agent: 'claude-code', token_name: 'e2e-runners' })
+  expect(rejected!.Payload).toMatchObject({ agent: 'claude-code', token_name: id })
   const runners: Runner[] = await (await page.request.get('/api/v1/runners')).json()
   expect(runners.map((x) => x.ID)).not.toContain(id)
 
   // То же событие видно администратору на вкладке «Аудит».
   await page.goto('/#/app-management/audit')
   await page.getByLabel('тип события').selectOption('runner.rejected')
-  await expect(page.locator('.act-row', { hasText: id })).toContainText('отклонена')
+  // До ответа на фильтр видна лента всех типов, где есть и выпуск токена
+  // этого сценария: строка ищется по типу события.
+  await expect(page.locator('.act-row', { hasText: id }).filter({ hasText: 'runner.rejected' })).toContainText('отклонена')
 })
 
 // Переопределение модели агента, которого больше нет в каталоге (до
