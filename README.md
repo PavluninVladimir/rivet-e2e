@@ -48,8 +48,15 @@ rivet/                 # git clone https://github.com/PavluninVladimir/rivet.git
 Нужны Go, Node.js 24, git, curl и PostgreSQL, доступный по
 `RIVET_DATABASE_URL` (по умолчанию
 `postgres://rivet:rivet@localhost:5432/rivet?sslmode=disable`; подойдёт
-`docker compose up -d postgres minio` в `rivet-service`). MinIO нужен
-сценариям с транскриптами сессий.
+`docker compose up -d postgres s3` в `rivet-service` с `.env` из
+`.env.example`). S3-хранилище (RustFS) нужно сценариям с транскриптами
+сессий.
+
+Пароль bootstrap-администратора и ключ шифрования стенд берёт свои на
+каждый прогон: rivetd не стартует с паролем или ключом, опубликованными в
+репозитории. Пароль задаёт `e2e/stand.ts` (или `E2E_ADMIN_PASSWORD`),
+`e2e-stand.sh` кладёт его в `$E2E_STAND_DIR/admin-password`, чтобы войти в
+консоль стенда руками.
 
 ## Запуск
 
@@ -95,9 +102,18 @@ E2E_HTTP_PORT=8581 npx playwright test
 доступа валит прогон, а не подменяет ветку на `main`. Выбранные ветки и
 коммиты видны в summary прогона.
 
+## Участие
+
+Порядок правок, проверки и CLA описаны в [CONTRIBUTING.md](CONTRIBUTING.md).
+Об уязвимостях сообщайте приватно, как описано в [SECURITY.md](SECURITY.md).
+
 ## License
 
-Copyright (C) 2026 Vladimir Pavlunin. Licensed under the GNU Affero General Public License v3.0 only (AGPL-3.0-only).
+Copyright (C) 2026 Vladimir Pavlunin. Licensed under the GNU Affero General Public License v3.0 only (AGPL-3.0-only),
+with an additional permission under section 7 ([LICENSE-EXCEPTION](LICENSE-EXCEPTION)).
 
-Полный текст лицензии — в файле [LICENSE](LICENSE). Основной репозиторий
-проекта: [PavluninVladimir/rivet](https://github.com/PavluninVladimir/rivet).
+Полный текст лицензии в файле [LICENSE](LICENSE), дополнительное
+разрешение по разделу 7 в [LICENSE-EXCEPTION](LICENSE-EXCEPTION). Сценарии
+ничего стороннего не распространяют: Playwright и другие зависимости ставит
+`npm ci`. Основной репозиторий проекта:
+[PavluninVladimir/rivet](https://github.com/PavluninVladimir/rivet).

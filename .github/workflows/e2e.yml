@@ -124,3 +124,22 @@ jobs:
           path: |
             rivet/rivet-e2e/playwright-report
             rivet/rivet-e2e/test-results
+
+  # Сканер секретов по всей истории.
+  secrets:
+    runs-on: ubuntu-latest
+    # gitleaks-action на pull_request читает список коммитов PR через API:
+    # в приватном репозитории без pull-requests: read запрос получит 403.
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Версия, на которой проверены исключения .gitleaks.toml.
+          GITLEAKS_VERSION: 8.30.1

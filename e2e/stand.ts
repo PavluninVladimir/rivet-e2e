@@ -1,3 +1,5 @@
+import { randomBytes } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import type { Page } from '@playwright/test'
@@ -20,12 +22,39 @@ export const STAND = {
   dir: path.resolve(process.env.E2E_STAND_DIR || (http === 8281 ? '/tmp/rivet-e2e-stand' : `/tmp/rivet-e2e-stand-${http}`)),
 }
 
+// Bootstrap-администратор стенда. Пароль не опубликован в репозитории:
+// rivetd не стартует с паролем из документации и примеров (спека
+// access-policy «Безопасные умолчания установки»). Порядок: E2E_ADMIN_PASSWORD
+// из окружения; пароль уже поднятого стенда (e2e-stand.sh пишет его в
+// $E2E_STAND_DIR/admin-password, нужен при reuseExistingServer); иначе
+// новый случайный. Значение кладётся в process.env основного процесса
+// Playwright, и воркеры со сценариями наследуют его.
+function standPassword(): string {
+  if (process.env.E2E_ADMIN_PASSWORD) return process.env.E2E_ADMIN_PASSWORD
+  try {
+    const saved = readFileSync(path.join(STAND.dir, 'admin-password'), 'utf-8').trim()
+    if (saved) return saved
+  } catch {
+    // стенда ещё нет
+  }
+  return randomBytes(18).toString('base64url')
+}
+const adminPassword = standPassword()
+process.env.E2E_ADMIN_PASSWORD = adminPassword
+
+export const ADMIN = {
+  login: process.env.E2E_ADMIN_LOGIN || 'e2e-admin',
+  password: adminPassword,
+}
+
 // Окружение для e2e-stand.sh: те же значения, что видят сценарии.
 export const STAND_ENV: Record<string, string> = {
   E2E_HTTP_PORT: STAND.httpPort,
   E2E_GRPC_PORT: STAND.grpcPort,
   E2E_LLM_PORT: STAND.llmPort,
   E2E_STAND_DIR: STAND.dir,
+  E2E_ADMIN_LOGIN: ADMIN.login,
+  E2E_ADMIN_PASSWORD: ADMIN.password,
 }
 
 // rivet-service рядом с rivet-e2e (структура как локально и в CI):

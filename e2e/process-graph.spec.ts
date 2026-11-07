@@ -103,8 +103,8 @@ test('участник без роли владельца видит граф т
   await page.getByPlaceholder('Логин').fill(member)
   await page.getByPlaceholder('Пароль').fill('viewer-pass-1')
   await page.getByRole('button', { name: 'Войти' }).click()
-  // Если установка требует сменить выданный пароль при первом входе — меняем.
-  const gate = page.getByPlaceholder('Выданный пароль')
+  // Если установка требует сменить пароль при первом входе, меняем.
+  const gate = page.getByPlaceholder('Текущий пароль')
   await expect(page.getByRole('button', { name: 'Выйти' }).or(gate)).toBeVisible()
   if (await gate.isVisible()) {
     await gate.fill('viewer-pass-1')
