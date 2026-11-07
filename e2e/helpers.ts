@@ -1,5 +1,5 @@
 import { expect, type Page } from '@playwright/test'
-import { LLM_URL, STAND } from './stand'
+import { ADMIN, LLM_URL, STAND } from './stand'
 
 // Токен стенда намеренно длинный: короткий бэкенд не показывает вовсе,
 // и проверка «токен не виден в интерфейсе» стала бы бессмысленной.
@@ -11,12 +11,12 @@ export const HTTP_PORT = STAND.httpPort
 // Хелперы ходят через UI, как человек: никаких прямых вызовов API.
 
 // Вход стендовым bootstrap-админом (rivetd поднят e2e-стендом с
-// RIVET_ADMIN_LOGIN/RIVET_ADMIN_PASSWORD). Консоль без сессии показывает
-// экран логина на любом адресе.
+// RIVET_ADMIN_LOGIN/RIVET_ADMIN_PASSWORD, пароль свой на прогон, см.
+// stand.ts). Консоль без сессии показывает экран логина на любом адресе.
 export async function login(page: Page): Promise<void> {
   await page.goto('/')
-  await page.getByPlaceholder('Логин').fill(process.env.E2E_ADMIN_LOGIN ?? 'e2e-admin')
-  await page.getByPlaceholder('Пароль').fill(process.env.E2E_ADMIN_PASSWORD ?? 'e2e-password')
+  await page.getByPlaceholder('Логин').fill(ADMIN.login)
+  await page.getByPlaceholder('Пароль').fill(ADMIN.password)
   await page.getByRole('button', { name: 'Войти' }).click()
   await expect(page.getByRole('button', { name: 'Выйти' })).toBeVisible()
 }

@@ -283,8 +283,8 @@ test('искажённая цитата уходит в отброшенное, 
       await mp.getByPlaceholder('Логин').fill(member)
       await mp.getByPlaceholder('Пароль').fill('member-pass-1')
       await mp.getByRole('button', { name: 'Войти' }).click()
-      // Установка может требовать смены выданного пароля при первом входе.
-      const gate = mp.getByPlaceholder('Выданный пароль')
+      // Установка может требовать смены пароля при первом входе.
+      const gate = mp.getByPlaceholder('Текущий пароль')
       await expect(mp.getByRole('button', { name: 'Выйти' }).or(gate)).toBeVisible()
       if (await gate.isVisible()) {
         await gate.fill('member-pass-1')

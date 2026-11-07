@@ -1,13 +1,14 @@
 import { expect, test } from '@playwright/test'
 import { createProject, login, openProjectSettings } from './helpers'
+import { ADMIN } from './stand'
 
 // Состояния формы по спеке web «Система элементов форм»: отправка входа по
 // Enter, ошибка у поля после blur, занятая кнопка при сохранении.
 
 test('вход отправляется по Enter из поля пароля', async ({ page }) => {
   await page.goto('/')
-  await page.getByPlaceholder('Логин').fill(process.env.E2E_ADMIN_LOGIN ?? 'e2e-admin')
-  await page.getByPlaceholder('Пароль').fill(process.env.E2E_ADMIN_PASSWORD ?? 'e2e-password')
+  await page.getByPlaceholder('Логин').fill(ADMIN.login)
+  await page.getByPlaceholder('Пароль').fill(ADMIN.password)
   await page.getByPlaceholder('Пароль').press('Enter')
   await expect(page.getByRole('button', { name: 'Выйти' })).toBeVisible()
 })

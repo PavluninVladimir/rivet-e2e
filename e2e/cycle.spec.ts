@@ -113,7 +113,7 @@ test('участник добавляет отзыв на экране цикл�
     await mp.getByPlaceholder('Логин').fill(member)
     await mp.getByPlaceholder('Пароль').fill('member-pass-1')
     await mp.getByRole('button', { name: 'Войти' }).click()
-    const gate = mp.getByPlaceholder('Выданный пароль')
+    const gate = mp.getByPlaceholder('Текущий пароль')
     await expect(mp.getByRole('button', { name: 'Выйти' }).or(gate)).toBeVisible()
     if (await gate.isVisible()) {
       await gate.fill('member-pass-1')

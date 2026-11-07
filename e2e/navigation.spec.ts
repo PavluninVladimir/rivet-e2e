@@ -1,5 +1,6 @@
 import { expect, test, type Browser, type Page } from '@playwright/test'
 import { addTask, createEpic, createProject, login, node, openProject, openSection, projectFromURL, projectSections, sectionItem } from './helpers'
+import { ADMIN } from './stand'
 
 // Навигация по проекту (add-project-navigation, спека web «Навигация по
 // проекту», «Проект в адресе экранов проекта», «Совместимость старых
@@ -26,8 +27,8 @@ async function freshPage(browser: Browser, hash: string): Promise<Page> {
   const ctx = await browser.newContext({ baseURL: test.info().project.use.baseURL })
   const page = await ctx.newPage()
   await page.goto('/' + hash)
-  await page.getByPlaceholder('Логин').fill(process.env.E2E_ADMIN_LOGIN ?? 'e2e-admin')
-  await page.getByPlaceholder('Пароль').fill(process.env.E2E_ADMIN_PASSWORD ?? 'e2e-password')
+  await page.getByPlaceholder('Логин').fill(ADMIN.login)
+  await page.getByPlaceholder('Пароль').fill(ADMIN.password)
   await page.getByRole('button', { name: 'Войти' }).click()
   await expect(page.getByRole('button', { name: 'Выйти' })).toBeVisible()
   return page
