@@ -172,7 +172,7 @@ test('участник добавляет отзыв на экране цикл�
     // Потребность с цитатой из отзыва прошла проверку цитат и ведёт в отзыв.
     const src = page.locator('.need-card .quote-src', { hasText: `отзыв «${source}», строка 1` }).first()
     await expect(src).toBeVisible()
-    await src.locator('a').click()
+    await src.getByRole('button').click()
     await expect(page.locator('.iv-modal .iv-line.hl mark')).toHaveText(text)
     await page.locator('.iv-modal').getByRole('button', { name: 'закрыть' }).click()
     await expect(page.locator('.iv-modal')).toHaveCount(0)
