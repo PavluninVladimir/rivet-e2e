@@ -147,6 +147,9 @@ test('разрыв потока: браузер переподключается
   try {
     const p = await ctx.newPage()
     await login(p)
+    // После входа оболочка видна раньше, чем завершится начальная навигация.
+    await expect(p).toHaveURL(/#\/projects$/)
+    await expect(p.getByRole('heading', { name: 'Проекты', exact: true })).toBeVisible()
     const requests = countRequests(p)
     await p.goto(`/#/p/${pid}/epic/${epicId}`)
     await expect(p.getByRole('heading', { name: `Разрыв ${stamp}` })).toBeVisible()
