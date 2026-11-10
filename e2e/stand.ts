@@ -64,6 +64,20 @@ export const SERVICE_DIR = path.resolve(__dirname, '..', '..', 'rivet-service')
 // Fake-провайдер моделей стенда (OpenAI-совместимый, ключ fake-key).
 export const LLM_URL = `http://localhost:${STAND.llmPort}/v1`
 
+// Окружение GitOps стенда (fix-e2e-gitops-deploy): отвечает версией из
+// репозитория конфигурации e2e/gitops, GET /<путь файла> — содержимое
+// файла в ветке main. Порт выбирает ОС, e2e-stand.sh пишет адрес в
+// $E2E_STAND_DIR/gitops-env.addr. Возвращает базовый URL без слеша в конце.
+export async function gitopsEnvURL(): Promise<string> {
+  let addr: string
+  try {
+    addr = (await readFile(path.join(STAND.dir, 'gitops-env.addr'), 'utf-8')).trim()
+  } catch {
+    throw new Error(`нет ${path.join(STAND.dir, 'gitops-env.addr')}: стенд поднят без окружения GitOps, перезапустите его свежим rivet-service`)
+  }
+  return `http://${addr}`
+}
+
 // Песочница команд агента по пробе самого runner'а. e2e-stand.sh пишет
 // журнал каждого runner'а в $E2E_STAND_DIR/runner-<id>.log, а runner при
 // старте пишет итог пробы одной из двух строк (cmd/rivet-runner/run.go).
