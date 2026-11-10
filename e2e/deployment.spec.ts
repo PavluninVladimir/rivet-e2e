@@ -1,5 +1,9 @@
+import { execFile } from 'node:child_process'
+import path from 'node:path'
+import { promisify } from 'node:util'
 import { expect, test } from '@playwright/test'
 import { HTTP_PORT, addTask, createEpic, createProject, expectNodeStatus, login, node, openProjectSettings, openSection } from './helpers'
+import { STAND, gitopsEnvURL } from './stand'
 
 // Публикация окружений (implement-deployment): auto-деплой после merge
 // с Deploy → Verify и провал с паузой и возобновлением.
@@ -154,31 +158,56 @@ test('окружение Kubernetes создаётся и публикация �
   await expect(card).toContainText('deploy/k8s')
 })
 
-// Публикация через GitOps (add-gitops-delivery): Rivet коммитит версию в
-// репозиторий конфигурации и ждёт, пока окружение начнёт отвечать ею.
-// Стенд не поднимает «окружение», которое умело бы показывать свою
-// версию, поэтому проверяется этап Deploy: коммит выполнен и виден, а
-// публикация ждёт синхронизации. Ожидание версии покрыто тестами Go.
-test('окружение GitOps коммитит версию и ждёт синхронизации', async ({ page }) => {
+// Публикация через GitOps (add-gitops-delivery, fix-e2e-gitops-deploy):
+// Rivet коммитит версию в репозиторий конфигурации и ждёт, пока окружение
+// начнёт отвечать ею. Репозиторий конфигурации стенда — e2e/gitops в
+// git-режиме fake SCM, окружение — программа стенда, которая отдаёт файл
+// версии из его ветки main, как приложение после синхронизации. Файл
+// версии свой на прогон: повторный прогон на поднятом стенде тоже
+// коммитит, а не находит версию уже в конфигурации.
+test('окружение GitOps коммитит версию и публикуется после синхронизации', async ({ page }) => {
   await login(page)
   const stamp = Date.now()
   const projectName = `GitOps ${stamp}`
+  const file = `envs/${stamp}/version`
+  const versionURL = `${await gitopsEnvURL()}/${file}`
 
   await createProject(page, projectName)
   await openProjectSettings(page, projectName, 'Окружения')
   await page.getByRole('button', { name: 'Новое окружение' }).click()
   await page.getByPlaceholder(/Имя \(staging/).fill('gitops')
   await page.locator('.modal select').nth(1).selectOption('gitops')
-  await page.getByPlaceholder(/Файл с версией/).fill('envs/prod/version')
-  await page.getByPlaceholder(/URL health-check/).fill(`http://localhost:${HTTP_PORT}/api/v1/health`)
+  await page.getByPlaceholder(/Репозиторий конфигурации/).fill('e2e/gitops')
+  await page.getByPlaceholder(/Файл с версией/).fill(file)
+  await page.getByPlaceholder(/URL health-check/).fill(versionURL)
   await page.locator('.modal').getByRole('button', { name: 'Сохранить' }).click()
 
   const card = page.locator('.env-card', { hasText: 'gitops' })
   await expect(card).toBeVisible()
   await expect(card).toContainText('gitops')
 
+  // До публикации окружение этой версии не знает.
+  expect((await page.request.get(versionURL)).status()).toBe(404)
+
+  // Verify опрашивает окружение раз в 10 секунд: DONE наступает только
+  // после того, как оно ответило закоммиченной версией.
   await card.getByRole('button', { name: 'Опубликовать' }).click()
-  await expect(card.locator('.sess-stage')).toHaveText('DEPLOYING', { timeout: 60_000 })
-  // Ссылка на коммит версии видна рядом со статусом.
-  await expect(card.getByRole('link', { name: /коммит/ })).toBeVisible()
+  await expect(card.locator('.sess-stage')).toHaveText('DONE', { timeout: 60_000 })
+  // Версия публикации у fake-хостинга для e2e/demo — базовая ветка.
+  await expect(card).toContainText('main')
+
+  // Ссылка на коммит версии ведёт на настоящий коммит репозитория
+  // конфигурации, и в нём файл версии.
+  const link = card.getByRole('link', { name: /коммит/ })
+  await expect(link).toBeVisible()
+  const sha = (await link.getAttribute('href'))?.match(/^https:\/\/fake\.local\/e2e\/gitops\/commit\/([0-9a-f]{40})$/)?.[1]
+  expect(sha, 'ссылка на коммит e2e/gitops').toBeTruthy()
+  const { stdout } = await promisify(execFile)('git',
+    ['--git-dir', path.join(STAND.dir, 'repos', 'e2e', 'gitops.git'), 'show', `${sha}:${file}`])
+  expect(stdout).toBe('main\n')
+
+  // Окружение отвечает опубликованной версией.
+  const res = await page.request.get(versionURL)
+  expect(res.status()).toBe(200)
+  expect(await res.text()).toBe('main\n')
 })
