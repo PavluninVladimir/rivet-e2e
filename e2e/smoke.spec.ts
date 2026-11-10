@@ -2,7 +2,8 @@ import { expect, test } from '@playwright/test'
 import { addTask, createEpic, createProject, login, node } from './helpers'
 
 // Smoke: проект, Epic и задача создаются через UI, задача видна в DAG,
-// деталка открывается, палитра находит задачу по имени (2.2).
+// деталка открывается мышью и с клавиатуры, палитра находит задачу по
+// имени (2.2).
 test('создание проекта, Epic и задачи через UI', async ({ page }) => {
   await login(page)
   const stamp = Date.now()
@@ -19,6 +20,17 @@ test('создание проекта, Epic и задачи через UI', asyn
   await expect(drawer.getByRole('heading', { name: taskTitle })).toBeVisible()
   await expect(drawer.getByText('e2e-результат записан')).toBeVisible()
   await drawer.getByRole('button', { name: '✕' }).click()
+  await expect(drawer.getByRole('heading', { name: taskTitle })).toHaveCount(0)
+
+  // Узел графа открывается и с клавиатуры: Enter и пробел
+  // (fix-console-rivetd-tails, спека web «Ссылки внутри экранов»).
+  for (const key of ['Enter', 'Space']) {
+    await node(page, taskTitle).focus()
+    await page.keyboard.press(key)
+    await expect(drawer.getByRole('heading', { name: taskTitle })).toBeVisible()
+    await drawer.getByRole('button', { name: '✕' }).click()
+    await expect(drawer.getByRole('heading', { name: taskTitle })).toHaveCount(0)
+  }
 
   // Палитра находит задачу.
   await page.keyboard.press('ControlOrMeta+KeyK')

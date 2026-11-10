@@ -324,6 +324,41 @@ test('на узком экране меню открывается кнопко�
   await expect(page.getByRole('heading', { name: 'Обзор проекта' })).toBeVisible()
 })
 
+// Кнопка «Меню» есть только на узком экране. Если окно стало широким, пока
+// она в фокусе, фокус переходит на текущий раздел боковой панели, а не
+// теряется в body (fix-console-rivetd-tails).
+test('фокус с кнопки «Меню» при расширении окна переходит на текущий раздел', async ({ page }) => {
+  await login(page)
+  await createProject(page, `NavFocus ${Date.now()}`)
+  const current = projectSections(page).locator('[aria-current="page"]')
+  await expect(current).toHaveText(label('Epic’и'))
+
+  // Панель закрыта, фокус на кнопке.
+  await page.setViewportSize({ width: 390, height: 800 })
+  const menu = page.getByRole('button', { name: 'Меню' })
+  await menu.focus()
+  await expect(menu).toBeFocused()
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await expect(menu).toBeHidden()
+  await expect(current).toBeFocused()
+
+  // Панель открыта, фокус вернули на кнопку: панель закрывается, фокус тот же.
+  await page.setViewportSize({ width: 390, height: 800 })
+  await menu.click()
+  await expect(menu).toHaveAttribute('aria-expanded', 'true')
+  await menu.focus()
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await expect(page.locator('#viewport')).not.toHaveAttribute('inert')
+  await expect(current).toBeFocused()
+
+  // Фокус не на кнопке: расширение окна его не трогает.
+  await page.setViewportSize({ width: 390, height: 800 })
+  const crumb = page.getByRole('navigation', { name: 'Путь' }).getByRole('link').first()
+  await crumb.focus()
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await expect(crumb).toBeFocused()
+})
+
 test('эскалация в другом проекте появляется у «← Все проекты» без перехода к «Проектам»', async ({ page, context }) => {
   test.setTimeout(240_000)
   await login(page)

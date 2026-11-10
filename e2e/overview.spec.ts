@@ -100,8 +100,8 @@ test('обзор показывает прогресс, пропускную с�
     new RegExp(`^прогноз \\d{4}-\\d\\d-\\d\\d \\d\\d:\\d\\d позже целевой даты ${dueInput.replace('T', ' ')}$`))
   await expect(card.locator('.ov-reasons li')).toHaveCount(1)
 
-  // Причина ведёт на дашборд Epic'а.
-  await late.getByRole('button').click()
+  // Причина ведёт на дашборд Epic'а: это ссылка с адресом.
+  await late.getByRole('link').click()
   await expect(page.getByRole('heading', { name: epic })).toBeVisible()
 })
 
