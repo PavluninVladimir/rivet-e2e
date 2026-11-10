@@ -111,10 +111,12 @@ test('владелец загружает интервью, видит ход а
     await expect(section(page, /^Отброшено при проверке/)).toHaveCount(0)
 
     // Цитата ведёт в интервью: строка 6 «# заголовок, пустая, И, Р, И, Р».
+    // Источник цитаты — кнопка: открывается и с клавиатуры.
     const need = page.locator('.need-card', { has: page.locator('.quote-text', { hasText: MANAGER[1] }) })
-    const src = need.locator('.quote-src a')
+    const src = need.locator('.quote-src').getByRole('button')
     await expect(src).toHaveText('интервью «Менеджер по продажам», строка 6')
-    await src.click()
+    await src.focus()
+    await page.keyboard.press('Enter')
     const viewer = page.locator('.iv-modal')
     await expect(viewer.getByRole('heading', { name: 'Менеджер по продажам' })).toBeVisible()
     const hl = viewer.locator('.iv-line.hl')
@@ -187,6 +189,8 @@ test('бэклог правится и утверждается с декомп�
     const why = page.locator('.epic-why')
     await expect(why).toContainText('приоритет must')
     await expect(why).toContainText('исследование, версия 1')
+    // Переходы к другим экранам — ссылки с адресом: Tab, Enter, новая вкладка.
+    await expect(why.getByRole('link', { name: 'исследование, версия 1 →' })).toHaveAttribute('href', new RegExp(`^#/p/${pid}/discovery/.+`))
     await expect(why.locator('.quote-text', { hasText: MANAGER[2] })).toBeVisible()
     await expect(why).toContainText('Менеджер по продажам · интервью «Менеджер по продажам», строка 6')
     await expect(why.locator('.dw-sec', { hasText: 'Зависит от' })).toContainText(base)
@@ -207,8 +211,10 @@ test('бэклог правится и утверждается с декомп�
     }, { timeout: 30_000 }).toBe(true)
     await expect(node(page, prep).locator('.st')).toHaveText('READY')
 
-    // Первый Epic доводится до конца кнопками Merge.
-    await wait.getByText(`«${base}»`).click()
+    // Первый Epic доводится до конца кнопками Merge. Переход по ссылке
+    // ожидания с клавиатуры.
+    await wait.getByRole('link', { name: `«${base}»` }).focus()
+    await page.keyboard.press('Enter')
     await expect(page.getByRole('heading', { name: base })).toBeVisible()
     await page.getByRole('button', { name: 'Запустить' }).click()
     const drawer = page.locator('#drawer')
@@ -322,7 +328,7 @@ test('искажённая цитата уходит в отброшенное, 
       await expect(mp.getByRole('button', { name: /^удалить /i })).toHaveCount(0)
       await expect(backlog.locator('input, textarea, select')).toHaveCount(0)
       // Цитата открывается и участнику.
-      await mp.locator('.need-card .quote-src a').first().click()
+      await mp.locator('.need-card .quote-src').getByRole('button').first().click()
       await expect(mp.locator('.iv-modal .iv-line.hl mark')).toHaveText(replies[1])
       // Запуск анализа в обход консоли отклоняется ошибкой доступа.
       const denied = await mp.request.post(`/api/v1/projects/${pid}/discovery/analyses`)
