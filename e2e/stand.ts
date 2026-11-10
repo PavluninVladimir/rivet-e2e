@@ -6,9 +6,10 @@ import type { Page } from '@playwright/test'
 
 // Порты и каталог e2e-стенда. Их же читает scripts/e2e-stand.sh из
 // rivet-service: E2E_HTTP_PORT (консоль и API), E2E_GRPC_PORT (runner'ы),
-// E2E_LLM_PORT (fake-llm) и E2E_STAND_DIR (бинарники, токены, репозитории).
-// Задан только E2E_HTTP_PORT — остальное выводится из него: gRPC +10,
-// fake-llm +2, каталог с портом в имени. Второй стенд поднимается рядом с
+// E2E_LLM_PORT (fake-llm), E2E_RUVDS_PORT (fake RUVDS) и E2E_STAND_DIR
+// (бинарники, токены, репозитории). Задан только E2E_HTTP_PORT: остальное
+// выводится из него: gRPC +10, fake-llm +2, fake RUVDS +4, каталог с портом
+// в имени. Второй стенд поднимается рядом с
 // первым одной переменной: без общих портов и без rm -rf чужого каталога.
 // По умолчанию (8281) значения совпадают с умолчаниями e2e-stand.sh.
 const http = Number(process.env.E2E_HTTP_PORT || 8281)
@@ -17,6 +18,8 @@ export const STAND = {
   httpPort: String(http),
   grpcPort: process.env.E2E_GRPC_PORT || String(http + 10),
   llmPort: process.env.E2E_LLM_PORT || String(http + 2),
+  // Fake RUVDS (add-environment-provisioning): журнал запросов: /__fake/calls.
+  ruvdsPort: process.env.E2E_RUVDS_PORT || String(http + 4),
   // Абсолютный путь: стенд и тестовые программы запускаются из разных
   // каталогов, относительный E2E_STAND_DIR они поняли бы по-разному.
   dir: path.resolve(process.env.E2E_STAND_DIR || (http === 8281 ? '/tmp/rivet-e2e-stand' : `/tmp/rivet-e2e-stand-${http}`)),
@@ -52,6 +55,7 @@ export const STAND_ENV: Record<string, string> = {
   E2E_HTTP_PORT: STAND.httpPort,
   E2E_GRPC_PORT: STAND.grpcPort,
   E2E_LLM_PORT: STAND.llmPort,
+  E2E_RUVDS_PORT: STAND.ruvdsPort,
   E2E_STAND_DIR: STAND.dir,
   E2E_ADMIN_LOGIN: ADMIN.login,
   E2E_ADMIN_PASSWORD: ADMIN.password,
