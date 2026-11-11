@@ -117,6 +117,11 @@ jobs:
         working-directory: rivet/rivet-e2e
         env:
           RIVET_DATABASE_URL: postgres://rivet:rivet@localhost:5432/rivet?sslmode=disable
+      - name: Локальная Docker-публикация через браузер на отдельной БД
+        run: npx playwright test --config playwright.local-docker.config.ts
+        working-directory: rivet/rivet-e2e
+        env:
+          RIVET_DATABASE_URL: postgres://rivet:rivet@localhost:5432/rivet?sslmode=disable
       - uses: actions/upload-artifact@v7
         if: failure()
         with:

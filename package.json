@@ -8,7 +8,8 @@
     "url": "git+https://github.com/PavluninVladimir/rivet-e2e.git"
   },
   "scripts": {
-    "test": "playwright test"
+    "test": "playwright test",
+    "test:local-docker": "playwright test --config playwright.local-docker.config.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1"
