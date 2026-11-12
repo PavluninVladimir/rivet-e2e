@@ -124,3 +124,15 @@ with an additional permission under section 7 ([LICENSE-EXCEPTION](LICENSE-EXCEP
 ничего стороннего не распространяют: Playwright и другие зависимости ставит
 `npm ci`. Основной репозиторий проекта:
 [PavluninVladimir/rivet](https://github.com/PavluninVladimir/rivet).
+
+
+## Локальная Docker-публикация
+
+`npm run test:local-docker` проверяет весь пользовательский путь на отдельной
+БД и временном git-репозитории: ранняя подготовка стенда, публикация,
+перезапуск, redeploy, ошибка сборки с сохранением прежнего адреса, логи,
+остановка и очистка через форму. Окружения основного стенда и CRM не используются.
+Перед прогоном соберите соседний `rivet-web` командой `npm run build`.
+Пути можно переопределить через `RIVET_SERVICE_DIR` и `RIVET_WEB_DIR`.
+Нужны локальные Docker и PostgreSQL с правом создавать тестовые БД.
+Перезапуск Docker этот браузерный сценарий не выполняет.

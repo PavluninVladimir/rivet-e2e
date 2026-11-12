@@ -14,6 +14,7 @@ const env = Object.fromEntries(Object.entries(process.env).filter((e): e is [str
 
 export default defineConfig({
   testDir: './e2e',
+  testIgnore: 'local-docker.spec.ts',
   workers: 1,
   retries: process.env.CI ? 1 : 0,
   timeout: 120_000,
