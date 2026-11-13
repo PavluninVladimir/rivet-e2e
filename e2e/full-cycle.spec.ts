@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { addTask, createEpic, createProject, expectNodeStatus, login, node } from './helpers'
+import { addTask, createAssessedEpic, createProject, expectNodeStatus, login, node } from './helpers'
 
 // Полный цикл (2.3): запуск Epic, агент Rivet на runner'ах стенда (модель —
 // fake-llm) доводит задачу до review,
@@ -10,7 +10,7 @@ test('задача проходит конвейер до merge кнопкой',
   const taskTitle = `Полный цикл ${stamp}`
 
   await createProject(page, `Cycle ${stamp}`)
-  await createEpic(page, `Epic cycle ${stamp}`)
+  await createAssessedEpic(page, `Epic cycle ${stamp}`)
   await addTask(page, taskTitle)
 
   await page.getByRole('button', { name: 'Запустить' }).click()

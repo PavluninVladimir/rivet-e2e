@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { addTask, createEpic, createProject, expectNodeStatus, login, node, projectFromURL } from './helpers'
+import { addTask, createAssessedEpic, createProject, expectNodeStatus, login, node, projectFromURL } from './helpers'
 
 // Процесс задачи в деталке (fix-web-console-tails, спека web «Процесс
 // задачи в деталке»): компактный граф по снимку процесса задачи. Процесс
@@ -26,7 +26,7 @@ test('деталка задачи показывает процесс: теку�
   const taskTitle = `Граф процесса ${stamp}`
 
   await projectWithProcess(page, `ProcGraph ${stamp}`)
-  await createEpic(page, `Epic graph ${stamp}`)
+  await createAssessedEpic(page, `Epic graph ${stamp}`)
   await addTask(page, taskTitle)
 
   const drawer = page.locator('#drawer')
@@ -72,7 +72,7 @@ test('граф процесса показывает возврат с review и
   const taskTitle = `Возврат ${stamp} [e2e-native-changes]`
 
   await projectWithProcess(page, `ProcLoop ${stamp}`)
-  await createEpic(page, `Epic loop ${stamp}`)
+  await createAssessedEpic(page, `Epic loop ${stamp}`)
   await addTask(page, taskTitle)
   await page.getByRole('button', { name: 'Запустить' }).click()
   await expectNodeStatus(page, taskTitle, 'REVIEW')

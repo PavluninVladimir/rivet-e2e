@@ -2,7 +2,7 @@ import { execFile } from 'node:child_process'
 import path from 'node:path'
 import { promisify } from 'node:util'
 import { expect, test, type Page } from '@playwright/test'
-import { addTask, createEpic, createProject, expectNodeStatus, login, node, openProjectSettings, openSection } from './helpers'
+import { addTask, createAssessedEpic, createProject, expectNodeStatus, login, node, openProjectSettings, openSection } from './helpers'
 import { SERVICE_DIR, STAND, issueRunnerToken, runnerSandbox } from './stand'
 
 // Агент Rivet (add-native-agent): единственный агент установки, агентский
@@ -200,7 +200,7 @@ test('агент Rivet: модель по умолчанию и лимиты, ru
     // Задача: review идёт на явной модели участника, coding — на модели
     // агента по умолчанию.
     await openSection(page, 'Epic’и')
-    await createEpic(page, `Epic agents ${stamp}`)
+    await createAssessedEpic(page, `Epic agents ${stamp}`)
     const taskTitle = `Агент Rivet ${stamp}`
     await addTask(page, taskTitle)
     await page.getByRole('button', { name: 'Запустить' }).click()

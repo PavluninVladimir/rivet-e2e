@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { addTask, createEpic, createProject, expectNodeStatus, login, node } from './helpers'
+import { addTask, createAssessedEpic, createProject, expectNodeStatus, login, node } from './helpers'
 
 // Участники-люди (add-process-humans): на шаге review агент и владелец
 // проекта; владелец видит запуск в «Моих шагах», одобряет, задача готова к
@@ -31,7 +31,7 @@ test('владелец одобряет шаг review из «Моих шагов
   const stamp = Date.now()
   const taskTitle = `Человек-ревьюер ${stamp}`
   await projectWithHumanReview(page, stamp)
-  await createEpic(page, `Epic humans ${stamp}`)
+  await createAssessedEpic(page, `Epic humans ${stamp}`)
   await addTask(page, taskTitle)
   await page.getByRole('button', { name: 'Запустить' }).click()
   await expectNodeStatus(page, taskTitle, 'REVIEW')
@@ -63,7 +63,7 @@ test('возврат с замечаниями требует текста и п
   const stamp = Date.now()
   const taskTitle = `Замечания человека ${stamp}`
   const projectId = await projectWithHumanReview(page, stamp)
-  await createEpic(page, `Epic remarks ${stamp}`)
+  await createAssessedEpic(page, `Epic remarks ${stamp}`)
   await addTask(page, taskTitle)
   await page.getByRole('button', { name: 'Запустить' }).click()
   await expectNodeStatus(page, taskTitle, 'REVIEW')

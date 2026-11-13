@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { addTask, createEpic, createProject, expectNodeStatus, login, node, openProjectSettings, openSection } from './helpers'
+import { addTask, createAssessedEpic, createProject, expectNodeStatus, login, node, openProjectSettings, openSection } from './helpers'
 
 // Видимость сессий (add-session-visibility): в деталке завершённой стадии
 // открывается сохранённый транскрипт агента Rivet (текст модели и шаги
@@ -10,7 +10,7 @@ test('транскрипт завершённой стадии открывае�
   const taskTitle = `Транскрипт ${stamp}`
 
   await createProject(page, `Sessions ${stamp}`)
-  await createEpic(page, `Epic sessions ${stamp}`)
+  await createAssessedEpic(page, `Epic sessions ${stamp}`)
   await addTask(page, taskTitle)
   await page.getByRole('button', { name: 'Запустить' }).click()
 
@@ -62,7 +62,7 @@ test('сессия без транскрипта показывает «тран
   await expect(page.locator('.proc-section .note')).toContainText('сохранена версия проекта')
 
   await openSection(page, 'Epic’и')
-  await createEpic(page, `Epic nt ${stamp}`)
+  await createAssessedEpic(page, `Epic nt ${stamp}`)
   await addTask(page, taskTitle)
   await page.getByRole('button', { name: 'Запустить' }).click()
   await expectNodeStatus(page, taskTitle, 'REVIEW')

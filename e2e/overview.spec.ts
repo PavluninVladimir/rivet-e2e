@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { expect, test, type Page } from '@playwright/test'
-import { addTask, createEpic, createProject, expectNodeStatus, login, node } from './helpers'
+import { addTask, createAssessedEpic, createProject, expectNodeStatus, login, node } from './helpers'
 
 // Обзор проекта для руководителя (add-project-lead-view): прогон Epic'а на
 // агенте Rivet поверх fake-llm даёт прогресс, пропускную способность и
@@ -28,6 +28,43 @@ async function projectId(page: Page, name: string): Promise<string> {
   return id!
 }
 
+interface SpendAmount {
+  tokens_in: number | null
+  tokens_out: number | null
+  cost_usd: number | null
+  partial_cost: boolean
+}
+
+interface MoneyOverview {
+  summary: { spend: SpendAmount }
+  money: { period: SpendAmount; by_model: Array<{ key: string; amount: SpendAmount }> }
+}
+
+async function readMoney(page: Page, pid: string): Promise<MoneyOverview> {
+  const tz = await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone)
+  const response = await page.request.get(`/api/v1/projects/${pid}/overview?${new URLSearchParams({ period: '7d', tz })}`)
+  expect(response.ok()).toBeTruthy()
+  return response.json()
+}
+
+async function expectArchitectConnectionRemoved(page: Page) {
+  const epicId = /#\/p\/[^/]+\/epic\/([^/?]+)/.exec(page.url())?.[1]
+  expect(epicId).toBeTruthy()
+  const assessment = await page.request.get(`/api/v1/epics/${epicId}/architecture-assessment`)
+  expect(assessment.ok()).toBeTruthy()
+  const connection = (await assessment.json()).assessment.connection_id
+  expect(connection).toMatch(/^arch-e2e-/)
+  const catalog = await page.request.get('/api/v1/system/connections')
+  expect(catalog.ok()).toBeTruthy()
+  expect((await catalog.json()).some((entry: { id: string }) => entry.id === connection)).toBe(false)
+}
+
+function modelSpend(data: MoneyOverview, model: string): SpendAmount {
+  const row = data.money.by_model.find(entry => entry.key === model)
+  expect(row, `persisted usage for ${model}`).toBeTruthy()
+  return row!.amount
+}
+
 function pad(n: number): string {
   return String(n).padStart(2, '0')
 }
@@ -46,7 +83,9 @@ test('обзор показывает прогресс, пропускную с�
   const second = `Обзор вторая ${stamp}`
 
   await createProject(page, `Overview ${stamp}`)
-  await createEpic(page, epic)
+  const pid = await projectId(page, `Overview ${stamp}`)
+  await createAssessedEpic(page, epic)
+  await expectArchitectConnectionRemoved(page)
   await addTask(page, first)
   await addTask(page, second)
   await page.getByRole('button', { name: 'Запустить' }).click()
@@ -58,6 +97,21 @@ test('обзор показывает прогресс, пропускную с�
   await mergeTask(page, first)
 
   await openOverview(page)
+  const data = await readMoney(page, pid)
+  const architecture = modelSpend(data, 'fake-architect-assessment')
+  // 10 input + 5 output at synthetic $1/M each, persisted before the
+  // scoped connection is deleted. No current-catalog fallback can price it.
+  expect(architecture.tokens_in).toBe(10)
+  expect(architecture.tokens_out).toBe(5)
+  expect(architecture.cost_usd).toBe(0.000015)
+  expect(architecture.partial_cost).toBe(false)
+  const coding = modelSpend(data, 'fake-small')
+  expect(coding.cost_usd).toBeGreaterThan(0)
+  expect(coding.partial_cost).toBe(false)
+  expect(data.summary.spend.partial_cost).toBe(false)
+  expect(data.money.period.partial_cost).toBe(false)
+  expect(data.summary.spend.cost_usd).toBe(Number((coding.cost_usd! + 0.000015).toFixed(6)))
+  expect(data.money.period.cost_usd).toBe(data.summary.spend.cost_usd)
   const stat = (label: string) => page.locator('.mini-stat', { hasText: label }).locator('.v')
   await expect(stat('Активные Epic’и')).toHaveText('1')
   await expect(stat('Задач завершено')).toHaveText('1')
@@ -105,6 +159,41 @@ test('обзор показывает прогресс, пропускную с�
   await expect(page.getByRole('heading', { name: epic })).toBeVisible()
 })
 
+test('неполный расход сохраняет известную coding-сумму и обязательную пометку без architecture usage', async ({ page }) => {
+  test.setTimeout(180_000)
+  await login(page)
+  const stamp = Date.now()
+  const project = `Partial cost ${stamp}`
+  const task = `Known coding ${stamp}`
+  await createProject(page, project)
+  const pid = await projectId(page, project)
+  // The gate still runs normally. Only the provider's usage field is absent;
+  // catalog prices remain known and coding uses the usual priced fake-small.
+  await createAssessedEpic(page, `Partial Epic ${stamp}`, { reportedUsage: null })
+  await expectArchitectConnectionRemoved(page)
+  await addTask(page, task)
+  await page.getByRole('button', { name: 'Запустить' }).click()
+  await expectNodeStatus(page, task, 'REVIEW')
+  await openOverview(page)
+
+  const data = await readMoney(page, pid)
+  expect(modelSpend(data, 'fake-architect-assessment').cost_usd).toBeNull()
+  const coding = modelSpend(data, 'fake-small')
+  expect(coding.cost_usd).toBeGreaterThan(0)
+  expect(coding.partial_cost).toBe(false)
+  expect(data.summary.spend.cost_usd).toBe(coding.cost_usd)
+  expect(data.summary.spend.partial_cost).toBe(true)
+  expect(data.money.period.cost_usd).toBe(coding.cost_usd)
+  expect(data.money.period.partial_cost).toBe(true)
+  const spend = page.locator('.mini-stat', { hasText: 'Расход за период' }).locator('.v')
+  await expect(spend).toHaveText(/^\$\d+\.\d{2}\*$/)
+  await expect(spend).not.toHaveText('$0.00*')
+  await expect(spend.locator('.ov-warn')).toHaveText('*')
+  await expect(page.locator('[data-overview-money]')).toContainText(
+    '* часть записей без стоимости: сумма неполная.'
+  )
+})
+
 test('эскалация по задаче попадает в «Нужны решения», Epic ждёт человека, пункт открывает задачу', async ({ page }) => {
   await login(page)
   const stamp = Date.now()
@@ -112,7 +201,7 @@ test('эскалация по задаче попадает в «Нужны ре
   const taskTitle = `Решение ${stamp}`
 
   await createProject(page, `Decisions ${stamp}`)
-  await createEpic(page, epic)
+  await createAssessedEpic(page, epic)
   await addTask(page, taskTitle, 'Сценарий эскалации [e2e-block]: без ответа человека не продолжать.')
   await page.getByRole('button', { name: 'Запустить' }).click()
   // Агент по метке [e2e-block] задаёт вопрос человеку, по задаче
@@ -151,7 +240,7 @@ test('отчёт за период скачивается с семью разд
 
   await createProject(page, project)
   const pid = await projectId(page, project)
-  await createEpic(page, epic)
+  await createAssessedEpic(page, epic)
   await addTask(page, taskTitle)
   await page.getByRole('button', { name: 'Запустить' }).click()
   await expectNodeStatus(page, taskTitle, 'REVIEW')

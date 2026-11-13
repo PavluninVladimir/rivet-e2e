@@ -28,7 +28,14 @@ test('консоль и API отдаются с заголовками безо�
     expect(r.ok()).toBeTruthy()
     const h = r.headers()
     expect(h['content-security-policy']).toContain("default-src 'self'")
-    expect(h['content-security-policy']).toContain("script-src 'self';")
+    // Только self и один закреплённый hash статичного selection-script дизайна.
+    // Проверка остаётся точной: произвольные inline scripts, hosts и override
+    // через script-src-elem/attr здесь не разрешаются.
+    const directives = h['content-security-policy'].split(';').map(part => part.trim().split(/\s+/))
+    expect(directives.filter(parts => parts[0] === 'script-src')).toEqual([
+      ['script-src', "'self'", "'sha256-G1oTaUgBWCiHlmC7lbR+nvCWXc1B/gjzwMgpimcARI0='"]
+    ])
+    expect(directives.filter(parts => parts[0] === 'script-src-elem' || parts[0] === 'script-src-attr')).toEqual([])
     expect(h['content-security-policy']).toContain("frame-ancestors 'none'")
     expect(h['content-security-policy']).toContain("object-src 'none'")
     expect(h['content-security-policy']).not.toContain('unsafe-eval')

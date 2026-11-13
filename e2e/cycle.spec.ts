@@ -13,6 +13,12 @@ function phaseNode(page: Page, id: string) {
   return page.locator(`.cycle-ring [data-phase-node="${id}"]`)
 }
 
+// Feedback and empty-state text are siblings of the phase-opening button.
+// Keep clicks/ARIA checks on the actual button, and visible contents on its card.
+function phaseCard(page: Page, id: string) {
+  return page.locator('.cycle-ring').getByRole('group').filter({ has: page.locator(`[data-phase-node="${id}"]`) })
+}
+
 function phasePanel(page: Page, title: string) {
   return page.getByRole('complementary', { name: `Фаза ${title}` })
 }
@@ -37,7 +43,7 @@ test('фазы «Исследование» и «Архитектура» пок
   // перечитывает агрегат по событию снимка без перезагрузки.
   const architecture = phaseNode(page, 'architecture')
   await expect(architecture).not.toHaveAttribute('aria-label', /нет данных/, { timeout: 30_000 })
-  await expect(architecture).not.toContainText('нет данных')
+  await expect(phaseCard(page, 'architecture')).not.toContainText('нет данных')
   await architecture.click()
   const archPanel = phasePanel(page, 'Архитектура')
   await expect(archPanel.getByRole('button', { name: /Снимок архитектуры · CRM/ })).toBeVisible()
@@ -155,7 +161,7 @@ test('участник добавляет отзыв на экране цикл�
 
   // У владельца счётчик вырос без перезагрузки.
   await expect(discovery).toHaveAttribute('aria-label', /2 отзыва не учтены/)
-  await expect(discovery.locator('.cn-feedback')).toHaveText('2 отзыва не учтены')
+  await expect(phaseCard(page, 'discovery').locator('.cn-feedback')).toHaveText('2 отзыва не учтены')
 
   // «Исследование»: отзывы в списке, анализ по отзывам без интервью.
   await withFakeModel(page, stamp, async () => {
@@ -179,5 +185,5 @@ test('участник добавляет отзыв на экране цикл�
   })
   await openCycle(page)
   await expect(discovery).toHaveAttribute('aria-label', /в работе 0, ждут 0, нужен человек 1$/)
-  await expect(discovery.locator('.cn-feedback')).toHaveCount(0)
+  await expect(phaseCard(page, 'discovery').locator('.cn-feedback')).toHaveCount(0)
 })

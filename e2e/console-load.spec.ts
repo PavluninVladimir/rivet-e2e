@@ -1,7 +1,7 @@
 import http from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
-import { addTask, createEpic, createProject, expectNodeStatus, login, node, projectFromURL } from './helpers'
+import { addTask, createAssessedEpic, createProject, expectNodeStatus, login, node, projectFromURL } from './helpers'
 import { STAND } from './stand'
 
 // Поток событий и перечитывания консоли (fix-console-rivetd-tails, спеки
@@ -54,7 +54,7 @@ test('проект с длинным журналом открывается б�
   await login(page)
   const stamp = Date.now()
   await createProject(page, `Журнал ${stamp}`)
-  await createEpic(page, `Журнал ${stamp}`)
+  await createAssessedEpic(page, `Журнал ${stamp}`)
   const epicURL = page.url()
   const epicId = /\/epic\/([^/?]+)/.exec(epicURL)?.[1]
   expect(epicId).toBeTruthy()
@@ -139,7 +139,7 @@ test('разрыв потока: браузер переподключается
   const stamp = Date.now()
   await createProject(page, `Разрыв ${stamp}`)
   const pid = projectFromURL(page.url())
-  await createEpic(page, `Разрыв ${stamp}`)
+  await createAssessedEpic(page, `Разрыв ${stamp}`)
   const epicId = /\/epic\/([^/?]+)/.exec(page.url())![1]
 
   const proxy = await streamProxy()
@@ -212,7 +212,7 @@ test('после перехода в другой проект консоль п
   await createProject(page, nameB)
   const pidB = projectFromURL(page.url())
   const epicB = `Epic B ${stamp}`
-  await createEpic(page, epicB)
+  await createAssessedEpic(page, epicB)
   const epicId = /\/epic\/([^/?]+)/.exec(page.url())![1]
   await addTask(page, `Задача B ${stamp}`)
   let r = await page.request.put(`/api/v1/projects/${pidB}/policy`, { data: { daily_token_budget: 1 } })

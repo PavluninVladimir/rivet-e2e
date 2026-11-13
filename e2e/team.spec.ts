@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { addTask, createEpic, createProject, expectNodeStatus, login, node, openSection } from './helpers'
+import { addTask, createAssessedEpic, createProject, expectNodeStatus, login, node, openSection } from './helpers'
 
 // Представление «Команда» (add-team-visibility): реестр активных сессий с
 // последним шагом, поиск по истории, пересечения работ по общим файлам.
@@ -12,7 +12,7 @@ test('реестр показывает активную сессию, поис�
   const taskTitle = `Команда-${stamp}`
 
   await createProject(page, `Team ${stamp}`)
-  await createEpic(page, `Epic team ${stamp}`)
+  await createAssessedEpic(page, `Epic team ${stamp}`)
   await addTask(page, taskTitle, 'Наблюдение за сессией [e2e-slow]')
   const epicHash = await page.evaluate(() => location.hash)
   await page.getByRole('button', { name: 'Запустить' }).click()
@@ -49,7 +49,7 @@ test('две задачи с общим файлом дают предупреж
   const stamp = Date.now()
 
   await createProject(page, `Overlap ${stamp}`)
-  await createEpic(page, `Epic overlap ${stamp}`)
+  await createAssessedEpic(page, `Epic overlap ${stamp}`)
   // Две независимые задачи: два worker'а берут их параллельно, обе правят
   // e2e-result.txt и держат сессии открытыми ([e2e-slow]).
   await addTask(page, `Пересечение A ${stamp}`, 'Общий файл [e2e-slow]')
