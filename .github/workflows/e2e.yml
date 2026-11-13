@@ -113,6 +113,16 @@ jobs:
         working-directory: rivet/rivet-e2e
       - run: npx playwright install --with-deps chromium
         working-directory: rivet/rivet-e2e
+      - name: Chromium для безопасных дизайн-снимков
+        working-directory: rivet/rivet-e2e
+        run: |
+          browser=$(command -v google-chrome || command -v chromium || node -e 'process.stdout.write(require("@playwright/test").chromium.executablePath())')
+          test -x "$browser"
+          echo "RIVET_DESIGN_CHROMIUM_PATH=$browser" >> "$GITHUB_ENV"
+          if ! command -v psql >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y postgresql-client
+          fi
       - run: npx playwright test
         working-directory: rivet/rivet-e2e
         env:

@@ -63,7 +63,7 @@ export const STAND_ENV: Record<string, string> = {
 
 // rivet-service рядом с rivet-e2e (структура как локально и в CI):
 // отсюда сценарии запускают тестовые программы стенда через go run.
-export const SERVICE_DIR = path.resolve(__dirname, '..', '..', 'rivet-service')
+export const SERVICE_DIR = process.env.E2E_SERVICE_DIR || path.resolve(__dirname, '..', '..', 'rivet-service')
 
 // Fake-провайдер моделей стенда (OpenAI-совместимый, ключ fake-key).
 export const LLM_URL = `http://localhost:${STAND.llmPort}/v1`

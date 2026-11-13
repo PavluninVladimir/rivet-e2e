@@ -136,3 +136,18 @@ with an additional permission under section 7 ([LICENSE-EXCEPTION](LICENSE-EXCEP
 Пути можно переопределить через `RIVET_SERVICE_DIR` и `RIVET_WEB_DIR`.
 Нужны локальные Docker и PostgreSQL с правом создавать тестовые БД.
 Перезапуск Docker этот браузерный сценарий не выполняет.
+
+### Ассистент, дизайн и исходы исследования
+
+`e2e/workspaces.spec.ts` проходит через настоящие API, PostgreSQL, S3 и встроенную консоль. Подменяется только локальная модель из `e2e/fixtures/workspace-provider.ts`, сетевые запросы браузера не перехватываются. Фикстура проверяет исполнение и guards, а не качество реальной модели.
+
+Стенд записывает имя свежей базы в `$E2E_STAND_DIR/database-name`. Подготовка failed/legacy-состояний разрешена только для базы `rivet_e2e_<pid>_<timestamp>` и тестовых портов 8281/19381. Используется локальный `psql`, либо Docker-контейнер из `E2E_POSTGRES_CONTAINER` (по умолчанию `rivet-service-postgres-1`). Рабочая база не изменяется.
+
+Для screenshot handoff нужен доверенный Chromium с работающей песочницей. Путь задаётся `RIVET_DESIGN_CHROMIUM_PATH`. Отсутствие renderer возвращает явную ошибку, тест не подменяет её фиктивным PNG и не выключает sandbox. Изолированный уже поднятый стенд можно проверить отдельно:
+
+```sh
+E2E_HTTP_PORT=19381 E2E_STAND_DIR=/tmp/rivet-workspaces-stand \
+  npx playwright test --config playwright.workspaces.config.ts
+```
+
+Покрыты retry/resume/stop, повторный timeout и отзыв прав, три исхода исследования с Ada до планирования, правки и конфликты дизайна, anchored threads, private assets, immutable PNG/handoff и проверка настоящего Git commit с manifest. Историческое изображение проверяется после удаления из текущей версии и истечения capability: SQL меняет только тестовую БД, часы браузера вызывают обновление ссылки, затем проверяются реальные bytes и naturalWidth. Снимки с SHA содержимого и Git SHA различаются. Комментарий или связь не запускают merge.
