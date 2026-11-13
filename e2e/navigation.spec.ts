@@ -1,5 +1,5 @@
 import { expect, test, type Browser, type Page } from '@playwright/test'
-import { addTask, createEpic, createProject, login, node, openProject, openSection, projectFromURL, projectSections, sectionItem } from './helpers'
+import { addTask, createAssessedEpic, createProject, login, node, openProject, openSection, projectFromURL, projectSections, sectionItem } from './helpers'
 import { ADMIN } from './stand'
 
 // Навигация по проекту (add-project-navigation, спека web «Навигация по
@@ -95,7 +95,7 @@ test('переключение проекта на дашборде Epic’а о
   const alphaId = projectFromURL(page.url())
   await createProject(page, beta)
   const betaId = projectFromURL(page.url())
-  await createEpic(page, `Epic switch ${stamp}`)
+  await createAssessedEpic(page, `Epic switch ${stamp}`)
   await expect(page).toHaveURL(/\/epic\/[^/]+$/)
   const epicId = /\/epic\/([^/?]+)$/.exec(page.url())![1]
   const taskTitle = `Задача switch ${stamp}`
@@ -374,7 +374,7 @@ test('эскалация в другом проекте появляется у 
   try {
     await createProject(other, `NavLiveB ${stamp}`)
     betaId = projectFromURL(other.url())
-    await createEpic(other, `Epic live ${stamp}`)
+    await createAssessedEpic(other, `Epic live ${stamp}`)
     await addTask(other, `Эскалация live ${stamp}`, 'Сценарий эскалации [e2e-block]: без ответа человека не продолжать.')
     await other.getByRole('button', { name: 'Запустить' }).click()
     await expect(other.locator('.att-card', { hasText: 'BLOCKED' })).toBeVisible({ timeout: 90_000 })

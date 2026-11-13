@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { addTask, createEpic, createProject, login, node } from './helpers'
+import { addTask, createAssessedEpic, createProject, login, node } from './helpers'
 
 // Правка плана до запуска (add-plan-editing): поля, критерии, зависимости,
 // отклонение цикла, удаление задачи из чернового плана.
@@ -8,7 +8,7 @@ test('план правится и чистится до запуска, цик�
   const stamp = Date.now()
 
   await createProject(page, `Plan ${stamp}`)
-  await createEpic(page, `Epic plan ${stamp}`)
+  await createAssessedEpic(page, `Epic plan ${stamp}`)
   await addTask(page, `База ${stamp}`)
   await addTask(page, `Зависимая ${stamp}`)
   await addTask(page, `Лишняя ${stamp}`)

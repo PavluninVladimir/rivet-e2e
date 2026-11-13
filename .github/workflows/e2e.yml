@@ -123,12 +123,12 @@ jobs:
             sudo apt-get update -qq
             sudo apt-get install -y postgresql-client
           fi
-      - run: npx playwright test
+      - run: npx playwright test --reporter=line
         working-directory: rivet/rivet-e2e
         env:
           RIVET_DATABASE_URL: postgres://rivet:rivet@localhost:5432/rivet?sslmode=disable
       - name: Локальная Docker-публикация через браузер на отдельной БД
-        run: npx playwright test --config playwright.local-docker.config.ts
+        run: npx playwright test --config playwright.local-docker.config.ts --reporter=line
         working-directory: rivet/rivet-e2e
         env:
           RIVET_DATABASE_URL: postgres://rivet:rivet@localhost:5432/rivet?sslmode=disable

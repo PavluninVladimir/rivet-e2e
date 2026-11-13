@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { createEpic, createProject, login, node } from './helpers'
+import { createAssessedEpic, createProject, login, node } from './helpers'
 import { LLM_URL } from './stand'
 
 // Подключения к моделям (add-model-connections): подключение к fake-провайдеру
@@ -185,7 +185,7 @@ test('подключение к провайдеру, модели и деком
     const project = `Conn ${stamp}`
     await createProject(page, project)
     const epic = `Epic conn ${stamp}`
-    await createEpic(page, epic)
+    await createAssessedEpic(page, epic)
     await page.getByRole('button', { name: 'Декомпозировать' }).click()
     await expect(node(page, `Подготовка: ${epic}`)).toBeVisible({ timeout: 30_000 })
     await expect(node(page, `Завершение: ${epic}`)).toBeVisible()

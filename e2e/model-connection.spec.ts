@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { addTask, createEpic, createProject, expectNodeStatus, login, node } from './helpers'
+import { addTask, createAssessedEpic, createProject, expectNodeStatus, login, node } from './helpers'
 import { LLM_URL } from './stand'
 
 // Модель без рабочего подключения (fix-agent-without-connection): стадия
@@ -42,7 +42,7 @@ test('стадия ждёт подключения к модели и продо
     })
     expect(resp.ok()).toBeTruthy()
 
-    await createEpic(page, `Epic no key ${stamp}`)
+    await createAssessedEpic(page, `Epic no key ${stamp}`)
     await addTask(page, taskTitle)
     await page.getByRole('button', { name: 'Запустить' }).click()
 
@@ -125,7 +125,7 @@ test('отозванный ключ: подключение invalid, одна э
       return (list ?? []).filter((a) => a.ProjectID === projectId)
     }
 
-    await createEpic(page, `Epic revoked ${stamp}`)
+    await createAssessedEpic(page, `Epic revoked ${stamp}`)
     for (const title of titles) await addTask(page, title)
     // Ключ отозван у провайдера, в каталоге подключение по-прежнему ok.
     resp = await page.request.post(new URL('/_e2e/revoke', LLM_URL).toString(), { data: { key } })

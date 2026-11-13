@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { addTask, createEpic, createProject, expectNodeStatus, login, node } from './helpers'
+import { addTask, createAssessedEpic, createProject, expectNodeStatus, login, node } from './helpers'
 
 // Процесс проекта (add-process-model): владелец задаёт через API шаг review с
 // двумя участниками — агентом Rivet на разных моделях подключения стенда
@@ -37,7 +37,7 @@ test('процесс с двумя ревьюерами доводит зада�
   expect(resp.ok()).toBeTruthy()
   expect(await resp.json()).toMatchObject({ process_source: 'project' })
 
-  await createEpic(page, `Epic process ${stamp}`)
+  await createAssessedEpic(page, `Epic process ${stamp}`)
   await addTask(page, taskTitle)
   await page.getByRole('button', { name: 'Запустить' }).click()
 

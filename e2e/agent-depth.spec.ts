@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { addTask, createEpic, createProject, expectNodeStatus, login, node } from './helpers'
+import { addTask, createAssessedEpic, createProject, expectNodeStatus, login, node } from './helpers'
 
 // Глубина данных агента Rivet (add-native-agent): все runner'ы стенда ведут
 // агентский цикл Rivet поверх fake-llm, у всех глубина full. Timeline
@@ -12,7 +12,7 @@ test('полная глубина: шаги инструментов с файл
   const taskTitle = `Глубина ${stamp}`
 
   await createProject(page, `Depth ${stamp}`)
-  await createEpic(page, `Epic depth ${stamp}`)
+  await createAssessedEpic(page, `Epic depth ${stamp}`)
   await addTask(page, taskTitle)
   await page.getByRole('button', { name: 'Запустить' }).click()
   await expectNodeStatus(page, taskTitle, 'REVIEW')

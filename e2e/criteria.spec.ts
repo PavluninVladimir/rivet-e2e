@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { addTask, createEpic, createProject, expectNodeStatus, login, node, projectFromURL } from './helpers'
+import { addTask, createAssessedEpic, createProject, expectNodeStatus, login, node, projectFromURL } from './helpers'
 
 test('результаты критериев и причина возврата видны после исправления', async ({ page }) => {
   test.setTimeout(180_000)
@@ -7,7 +7,7 @@ test('результаты критериев и причина возврата
   const stamp = Date.now()
   await createProject(page, `Criteria ${stamp}`)
   const pid = projectFromURL(page.url())
-  await createEpic(page, `Epic criteria ${stamp}`)
+  await createAssessedEpic(page, `Epic criteria ${stamp}`)
   const title = `Критерий [e2e-criterion-fail] ${stamp}`
   await addTask(page, title)
   await node(page, title).click()

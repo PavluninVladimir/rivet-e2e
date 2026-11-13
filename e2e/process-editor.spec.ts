@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { addTask, createEpic, createProject, expectNodeStatus, login, openProjectSettings } from './helpers'
+import { addTask, createAssessedEpic, createProject, expectNodeStatus, login, openProjectSettings } from './helpers'
 
 // Редактор процесса (add-process-editor, add-process-graph-editor): шаг
 // prompt исполняет агент Rivet, вердикт — вызов finish; владелец правит процесс
@@ -35,7 +35,7 @@ test('шаг prompt исполняется агентом, процесс пра
   const taskTitle = `Задание агенту ${stamp}`
   const projectId = await projectWithPrompt(page, name)
 
-  await createEpic(page, `Epic editor ${stamp}`)
+  await createAssessedEpic(page, `Epic editor ${stamp}`)
   await addTask(page, taskTitle)
   await page.getByRole('button', { name: 'Запустить' }).click()
   // review → prompt (агент Rivet завершает шаг вердиктом ok) → ожидание merge.

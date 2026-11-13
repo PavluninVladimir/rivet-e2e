@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { addTask, createEpic, createProject, expectNodeStatus, login, node, sectionItem } from './helpers'
+import { addTask, createAssessedEpic, createProject, expectNodeStatus, login, node, sectionItem } from './helpers'
 
 // Эскалация (2.4): агент Rivet по метке [e2e-block] задаёт вопрос человеку
 // инструментом ask_human (сценарий fake-llm), карточка attention появляется,
@@ -11,7 +11,7 @@ test('blocked-задача эскалируется и возвращается 
 
   const project = `Esc ${stamp}`
   await createProject(page, project)
-  await createEpic(page, `Epic esc ${stamp}`)
+  await createAssessedEpic(page, `Epic esc ${stamp}`)
   await addTask(page, taskTitle, 'Сценарий эскалации [e2e-block]: без ответа человека не продолжать.')
 
   await page.getByRole('button', { name: 'Запустить' }).click()

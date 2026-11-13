@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { addTask, createEpic, createProject, expectNodeStatus, login, node } from './helpers'
+import { addTask, createAssessedEpic, createProject, expectNodeStatus, login, node } from './helpers'
 
 // Конфликт при merge (change add-merge-conflict-recovery): fake-хостинг
 // отклоняет первый merge PR задачи с меткой [e2e-conflict]. Подтверждение
@@ -11,7 +11,7 @@ test('конфликт при merge возвращает задачу агент
   const taskTitle = `Конфликт [e2e-conflict] ${stamp}`
 
   await createProject(page, `Conflict ${stamp}`)
-  await createEpic(page, `Epic conflict ${stamp}`)
+  await createAssessedEpic(page, `Epic conflict ${stamp}`)
   await addTask(page, taskTitle, 'Сценарий конфликта при merge: правка общего файла.')
   await page.getByRole('button', { name: 'Запустить' }).click()
 

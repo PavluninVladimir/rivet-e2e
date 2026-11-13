@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { addInterviewText, createProject, expectNodeStatus, login, node, openProject, withFakeModel } from './helpers'
+import { addInterviewText, createProject, expectNodeStatus, login, node, openProject, withFakeArchitect, withFakeModel } from './helpers'
 
 // Исследование продукта (add-product-discovery): интервью, анализ
 // Аналитиком на fake-llm, персоны и потребности с цитатами, бэклог с
@@ -138,7 +138,7 @@ test('бэклог правится и утверждается с декомп�
   test.setTimeout(300_000)
   await login(page)
   const stamp = Date.now()
-  await withFakeModel(page, stamp, async () => {
+  await withFakeArchitect(page, async () => withFakeModel(page, stamp, async () => {
     const project = `Backlog ${stamp}`
     await createProject(page, project)
     const pid = await projectId(page, project)
@@ -241,7 +241,7 @@ test('бэклог правится и утверждается с декомп�
     expect(running.length).toBeGreaterThan(0)
     expect(first('epic.waiting_deps')).toBeLessThan(first('epic.deps_ready'))
     expect(Math.min(...running)).toBeGreaterThan(first('epic.deps_ready'))
-  })
+  }))
 })
 
 test('искажённая цитата уходит в отброшенное, участник member видит исследование без действий', async ({ page, browser }) => {

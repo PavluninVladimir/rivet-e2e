@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { addTask, createProject, login, openSection } from './helpers'
+import { addTask, createProject, login, openSection, waitForEpicAssessment, withFakeArchitect } from './helpers'
 
 // Действия командной палитры (fix-web-console-tails, спека web «Командная
 // палитра»): новый Epic, запуск с подтверждением, пауза и возобновление
@@ -26,18 +26,21 @@ test('палитра создаёт Epic, запускает, ставит на 
   const item = (label: string) => pal.locator('.pal-item', { hasText: label })
   const status = page.locator('.epic-title-row .st')
 
-  // Новый Epic: команда без побочного эффекта выделена сразу, Enter
-  // открывает список Epic'ов проекта с формой.
-  await palette(page, 'Новый Epic')
-  await expect(pal.locator('.pal-group').first()).toHaveText('Команды')
-  await expect(item('Новый Epic')).toHaveClass(/sel/)
-  await page.keyboard.press('Enter')
-  await expect(page.getByRole('heading', { name: 'Новый Epic' })).toBeVisible()
-  await expect(page).toHaveURL(/#\/p\/[^/]+\/epics$/)
-  await page.getByPlaceholder('Название').fill(epicTitle)
-  await page.getByPlaceholder(/Цель/).fill('e2e-прогон палитры')
-  await page.getByRole('button', { name: 'Создать' }).click()
-  await expect(page.getByRole('heading', { name: epicTitle })).toBeVisible()
+  await withFakeArchitect(page, async (connection, seen) => {
+    // Новый Epic: команда без побочного эффекта выделена сразу, Enter
+    // открывает список Epic'ов проекта с формой.
+    await palette(page, 'Новый Epic')
+    await expect(pal.locator('.pal-group').first()).toHaveText('Команды')
+    await expect(item('Новый Epic')).toHaveClass(/sel/)
+    await page.keyboard.press('Enter')
+    await expect(page.getByRole('heading', { name: 'Новый Epic' })).toBeVisible()
+    await expect(page).toHaveURL(/#\/p\/[^/]+\/epics$/)
+    await page.getByPlaceholder('Название').fill(epicTitle)
+    await page.getByPlaceholder(/Цель/).fill('e2e-прогон палитры')
+    await page.getByRole('button', { name: 'Создать' }).click()
+    await expect(page.getByRole('heading', { name: epicTitle })).toBeVisible()
+    await waitForEpicAssessment(page, connection, seen)
+  })
   const epicId = /\/epic\/([^/?]+)/.exec(page.url())![1]
   await addTask(page, taskTitle, 'Сценарий палитры [e2e-block]: без ответа человека не продолжать.')
 

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { addTask, createEpic, createProject, expectNodeStatus, login, node } from './helpers'
+import { addTask, createAssessedEpic, createProject, expectNodeStatus, login, node } from './helpers'
 
 // Сессия доработки (add-user-sessions): blocked-задача → промпт участника →
 // fixing на runner'е → обычный конвейер до review; timeline показывает
@@ -10,7 +10,7 @@ test('сессия доработки выводит blocked-задачу в к�
   const taskTitle = `Доработка ${stamp}`
 
   await createProject(page, `UserSession ${stamp}`)
-  await createEpic(page, `Epic session ${stamp}`)
+  await createAssessedEpic(page, `Epic session ${stamp}`)
   await addTask(page, taskTitle, 'Сценарий эскалации [e2e-block]: без ответа человека не продолжать.')
   await page.getByRole('button', { name: 'Запустить' }).click()
   await expectNodeStatus(page, taskTitle, 'BLOCKED')

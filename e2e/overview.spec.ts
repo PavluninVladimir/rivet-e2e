@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { expect, test, type Page } from '@playwright/test'
-import { addTask, createEpic, createProject, expectNodeStatus, login, node } from './helpers'
+import { addTask, createAssessedEpic, createProject, expectNodeStatus, login, node } from './helpers'
 
 // Обзор проекта для руководителя (add-project-lead-view): прогон Epic'а на
 // агенте Rivet поверх fake-llm даёт прогресс, пропускную способность и
@@ -46,7 +46,7 @@ test('обзор показывает прогресс, пропускную с�
   const second = `Обзор вторая ${stamp}`
 
   await createProject(page, `Overview ${stamp}`)
-  await createEpic(page, epic)
+  await createAssessedEpic(page, epic)
   await addTask(page, first)
   await addTask(page, second)
   await page.getByRole('button', { name: 'Запустить' }).click()
@@ -112,7 +112,7 @@ test('эскалация по задаче попадает в «Нужны ре
   const taskTitle = `Решение ${stamp}`
 
   await createProject(page, `Decisions ${stamp}`)
-  await createEpic(page, epic)
+  await createAssessedEpic(page, epic)
   await addTask(page, taskTitle, 'Сценарий эскалации [e2e-block]: без ответа человека не продолжать.')
   await page.getByRole('button', { name: 'Запустить' }).click()
   // Агент по метке [e2e-block] задаёт вопрос человеку, по задаче
@@ -151,7 +151,7 @@ test('отчёт за период скачивается с семью разд
 
   await createProject(page, project)
   const pid = await projectId(page, project)
-  await createEpic(page, epic)
+  await createAssessedEpic(page, epic)
   await addTask(page, taskTitle)
   await page.getByRole('button', { name: 'Запустить' }).click()
   await expectNodeStatus(page, taskTitle, 'REVIEW')

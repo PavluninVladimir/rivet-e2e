@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { addTask, createEpic, createProject, login, node } from './helpers'
+import { addTask, createAssessedEpic, createProject, login, node } from './helpers'
 
 // Вердикты агента Rivet на шагах test и review (add-native-agent, задача
 // 3.3). Тестировщик и ревьюер — тот же агентский цикл runner'а, что и
@@ -65,7 +65,7 @@ test('тестировщик Rivet возвращает задачу с changes,
   const stamp = Date.now()
   const pid = await projectWithRoles(page, `Tester ${stamp}`)
   const taskTitle = `Тестировщик changes ${stamp}`
-  await createEpic(page, `Epic tester ${stamp}`)
+  await createAssessedEpic(page, `Epic tester ${stamp}`)
   await addTask(page, taskTitle, 'Тесты по критериям [e2e-tester-changes]')
   await page.getByRole('button', { name: 'Запустить' }).click()
 
@@ -94,7 +94,7 @@ test('ревьюер Rivet возвращает задачу с changes чере
   const stamp = Date.now()
   const pid = await projectWithRoles(page, `Reviewer ${stamp}`)
   const taskTitle = `Ревьюер changes ${stamp} [e2e-native-changes]`
-  await createEpic(page, `Epic reviewer ${stamp}`)
+  await createAssessedEpic(page, `Epic reviewer ${stamp}`)
   await addTask(page, taskTitle, 'Ревью в два прохода')
   await page.getByRole('button', { name: 'Запустить' }).click()
 

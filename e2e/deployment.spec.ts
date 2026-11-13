@@ -2,7 +2,7 @@ import { execFile } from 'node:child_process'
 import path from 'node:path'
 import { promisify } from 'node:util'
 import { expect, test } from '@playwright/test'
-import { HTTP_PORT, addTask, createEpic, createProject, expectNodeStatus, login, node, openProjectSettings, openSection } from './helpers'
+import { HTTP_PORT, addTask, createAssessedEpic, createProject, expectNodeStatus, login, node, openProjectSettings, openSection } from './helpers'
 import { STAND, gitopsEnvURL } from './stand'
 
 // Публикация окружений (implement-deployment): auto-деплой после merge
@@ -40,7 +40,7 @@ test('merge запускает auto-публикацию: Deploy → Verify, с�
   })
 
   await openSection(page, 'Epic’и')
-  await createEpic(page, `Epic deploy ${stamp}`)
+  await createAssessedEpic(page, `Epic deploy ${stamp}`)
   await addTask(page, taskTitle)
   await page.getByRole('button', { name: 'Запустить' }).click()
   await expectNodeStatus(page, taskTitle, 'REVIEW')

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { addTask, createEpic, createProject, expectNodeStatus, login, node, openSection } from './helpers'
+import { addTask, createAssessedEpic, createProject, expectNodeStatus, login, node, openSection } from './helpers'
 
 // Бюджет Epic (add-cost-transparency): маленький бюджет исчерпывается первой
 // же coding-стадией. Агент Rivet делает в ней пять ходов, fake-llm на каждый
@@ -13,7 +13,7 @@ test('бюджет Epic останавливает назначения и сн�
   const taskTitle = `Бюджет ${stamp}`
 
   await createProject(page, `EpicBudget ${stamp}`)
-  await createEpic(page, `Epic budget ${stamp}`)
+  await createAssessedEpic(page, `Epic budget ${stamp}`)
   await addTask(page, taskTitle)
 
   // Бюджет 1000 токенов до запуска.

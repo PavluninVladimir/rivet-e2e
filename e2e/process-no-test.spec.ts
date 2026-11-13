@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { addTask, createEpic, createProject, expectNodeStatus, login, node } from './helpers'
+import { addTask, createAssessedEpic, createProject, expectNodeStatus, login, node } from './helpers'
 
 // Процесс без шага проверок (fix-pr-without-test-step): шаг test отключён,
 // а PR всё равно создаётся перед первым шагом, которому он нужен. Ревьюер
@@ -56,7 +56,7 @@ test('процесс без проверок создаёт PR перед review
   })
   expect(resp.ok()).toBeTruthy()
 
-  await createEpic(page, `Epic no test ${stamp}`)
+  await createAssessedEpic(page, `Epic no test ${stamp}`)
   await addTask(page, taskTitle)
   await page.getByRole('button', { name: 'Запустить' }).click()
 
@@ -103,7 +103,7 @@ test('процесс без проверок и review мержит PR авто�
   })
   expect(resp.ok()).toBeTruthy()
 
-  await createEpic(page, `Epic no review ${stamp}`)
+  await createAssessedEpic(page, `Epic no review ${stamp}`)
   await addTask(page, taskTitle)
   await page.getByRole('button', { name: 'Запустить' }).click()
 

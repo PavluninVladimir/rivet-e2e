@@ -1,7 +1,7 @@
 import { rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { expect, test } from '@playwright/test'
-import { addTask, createEpic, expectNodeStatus, login, node, openProjectSettings, projectFromURL } from './helpers'
+import { addTask, createAssessedEpic, expectNodeStatus, login, node, openProjectSettings, projectFromURL } from './helpers'
 import { STAND } from './stand'
 
 // Отозванные учётные данные хостинга (change fix-credential-state, спека
@@ -48,7 +48,7 @@ test('отозванный токен останавливает задачу п
   await expect(page.getByText('Снимок архитектуры ещё строится')).toHaveCount(0)
 
   await page.goto(`/#/p/${pid}/epics`)
-  await createEpic(page, `Epic токен ${stamp}`)
+  await createAssessedEpic(page, `Epic токен ${stamp}`)
   const epicURL = page.url()
   await addTask(page, taskTitle)
   await writeFile(REVOKED, `${token}\n${otherRevoked}\n`)
