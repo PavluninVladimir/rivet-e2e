@@ -5,6 +5,23 @@ import { LLM_URL } from '../stand'
 
 const MODEL = 'fake-architect-assessment'
 
+export interface ReportedArchitectureUsage {
+  prompt_tokens: number
+  completion_tokens: number
+  total_tokens: number
+}
+
+export interface FakeArchitectOptions {
+  // null deliberately omits usage; absence of the option means known usage.
+  reportedUsage?: ReportedArchitectureUsage | null
+}
+
+const DEFAULT_USAGE: ReportedArchitectureUsage = {
+  prompt_tokens: 10,
+  completion_tokens: 5,
+  total_tokens: 15
+}
+
 interface TeamAgent {
   id: string
   name: string
@@ -33,7 +50,8 @@ const editable = (agent: TeamAgent) => ({
 // The baseline fake-llm predates Epic assessment. This local model adapter
 // supplies that one deterministic response; native tool/review requests still
 // use the stand's original fake-llm. Browser/API requests are never mocked.
-async function assessmentProvider() {
+async function assessmentProvider(options: FakeArchitectOptions) {
+  const usage = options.reportedUsage === undefined ? DEFAULT_USAGE : options.reportedUsage
   const seen = new Set<string>()
   const upstream = new URL(LLM_URL).origin
   const server = createServer(async (request, response) => {
@@ -77,6 +95,7 @@ async function assessmentProvider() {
           JSON.stringify({
             id: 'e2e-architecture-completion',
             model: body.model,
+            ...(usage === null ? {} : { usage }),
             choices: [
               {
                 index: 0,
@@ -135,7 +154,8 @@ let lease = Promise.resolve()
 // still test missing-model/waiting behaviour without invoking this fixture.
 export async function withFakeArchitect<T>(
   page: Page,
-  body: (connection: string, seen: Set<string>) => Promise<T>
+  body: (connection: string, seen: Set<string>) => Promise<T>,
+  options: FakeArchitectOptions = {}
 ): Promise<T> {
   const previous = lease
   let release!: () => void
@@ -150,7 +170,7 @@ export async function withFakeArchitect<T>(
   let created = false
   let canDelete = true
   try {
-    provider = await assessmentProvider()
+    provider = await assessmentProvider(options)
     const team = await page.request.get('/api/v1/team')
     expect(team.ok()).toBeTruthy()
     before = (await team.json()).agents.find((agent: TeamAgent) => agent.id === 'ada')
@@ -170,6 +190,22 @@ export async function withFakeArchitect<T>(
     expect(response.ok()).toBeTruthy()
     created = true
     response = await page.request.post(`/api/v1/system/connections/${connection}/discover`)
+    expect(response.ok()).toBeTruthy()
+    // Synthetic fixture rates, not a real provider price. Persist them before
+    // model assignment/call so control-plane metering can snapshot the catalog.
+    response = await page.request.put(`/api/v1/system/connections/${connection}/models`, {
+      data: {
+        models: [
+          {
+            id: MODEL,
+            label: 'E2E deterministic architect',
+            input_price: 1_000_000,
+            output_price: 1_000_000,
+            source: 'manual'
+          }
+        ]
+      }
+    })
     expect(response.ok()).toBeTruthy()
     // Treat the mutation as uncertain before sending: a lost HTTP response
     // must still reconcile and restore an assignment that reached the server.

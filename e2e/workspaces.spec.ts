@@ -30,10 +30,45 @@ const key = () => ({ 'Idempotency-Key': randomUUID() });
 async function project(page: Page, label: string) { await createProject(page, `QA ${label} ${Date.now()}`); return projectFromURL(page.url()); }
 async function config(page: Page, p: string) { const v = await ok(await page.request.get(`/api/v1/projects/${p}/assistant`)); return ok(await page.request.patch(`/api/v1/projects/${p}/assistant/config`, { data: { expected_revision: v.config.revision, enabled: false, connection_id: 'qa-workspaces', model_id: 'qa-model', limits: { max_run_actions: 3, max_run_seconds: 30, max_input_tokens: 100000, max_output_tokens: 4000, daily_tokens: 1000000, daily_cost_usd: 1 } } })); }
 async function seedFailed(page: Page, p: string) { const epic = randomUUID(); sql(`INSERT INTO epics(id,project_id,title,goal,status,kind) VALUES('${epic}','${p}','QA maintenance','Synthetic retry fixture','paused','maintenance');`); const task = await ok(await page.request.post(`/api/v1/epics/${epic}/tasks`, { data: { title: 'QA timeout task', description: 'Synthetic timeout fixture' } }), 201); sql(`UPDATE tasks SET status='failed',step_id='code',block_reason='timeout',attempt_used=3 WHERE id='${task.ID}';`); return { epic, task: task.ID }; }
+async function submissionEffects(page: Page, p: string) {
+    const history = await ok(await page.request.get(`/api/v1/projects/${p}/assistant/messages?limit=100`));
+    expect(history.next_cursor, 'the fixture must observe its complete submission history').toBeNull();
+    const runIDs = [...new Set<string>(history.items.map((m: any) => m.run_id).filter(Boolean))].sort();
+    const runs = await Promise.all(runIDs.map(async id => {
+        const result = await ok(await page.request.get(`/api/v1/projects/${p}/assistant/runs/${id}`));
+        return { id: result.run.id, actions: result.actions.map((a: any) => a.id).sort() };
+    }));
+    return { messages: history.items.map((m: any) => ({ id: m.id, run_id: m.run_id })).sort((a: any, b: any) => a.id.localeCompare(b.id)), runs };
+}
 async function send(page: Page, p: string, text: string, intent = 'question') {
-    const view = await ok(await page.request.get(`/api/v1/projects/${p}/assistant`));
-    const body = { text, intent, expected_snapshot_revision: view.snapshot.revision };
-    return ok(await page.request.post(`/api/v1/projects/${p}/assistant/messages`, { headers: key(), data: body }), 202);
+    // Positive clients may explicitly refresh a rejected CAS snapshot. Runner,
+    // model and domain facts can change while a fresh fixture is settling. This
+    // never retries an accepted run, guard denial or the explicit negative409.
+    for (let attempt = 0; attempt < 3; attempt++) {
+        const effects = await submissionEffects(page, p);
+        const calls = provider.assistantCalls;
+        const view = await ok(await page.request.get(`/api/v1/projects/${p}/assistant`));
+        const body = { text, intent, expected_snapshot_revision: view.snapshot.revision };
+        const response = await page.request.post(`/api/v1/projects/${p}/assistant/messages`, { headers: key(), data: body });
+        if (response.status() === 202) {
+            const accepted = await ok(response, 202);
+            expect(accepted.message.run_id).toBe(accepted.run.id);
+            expect(effects.runs.map(r => r.id)).not.toContain(accepted.run.id);
+            return accepted;
+        }
+        const rejected = await response.json();
+        if (response.status() !== 409 || rejected.error?.code !== 'stale_revision')
+            return ok(response, 202);
+        const refreshed = await ok(await page.request.get(`/api/v1/projects/${p}/assistant`));
+        expect(refreshed.active_run?.id ?? null, 'rejected CAS must not start an active run').toBe(view.active_run?.id ?? null);
+        expect(await submissionEffects(page, p), 'rejected CAS must not create messages, runs or actions').toEqual(effects);
+        expect(provider.assistantCalls, 'rejected CAS must not invoke the model').toBe(calls);
+        const beforeFacts = new Map(view.snapshot.facts.map((f: any) => [f.id, JSON.stringify(f.value)]));
+        const afterFacts = new Map(refreshed.snapshot.facts.map((f: any) => [f.id, JSON.stringify(f.value)]));
+        const changed = [...new Set([...beforeFacts.keys(), ...afterFacts.keys()])].filter(id => beforeFacts.get(id) !== afterFacts.get(id));
+        await test.info().attach(`rejected-snapshot-refresh-${attempt + 1}`, { contentType: 'application/json', body: JSON.stringify({ attempt: attempt + 1, rejected_code: rejected.error.code, before_revision: view.snapshot.revision, after_revision: refreshed.snapshot.revision, before_cursor: view.snapshot.event_cursor, after_cursor: refreshed.snapshot.event_cursor, changed_fact_ids: changed, messages: effects.messages.length, runs: effects.runs.length, actions: effects.runs.reduce((n, r) => n + r.actions.length, 0), model_calls_unchanged: true }) });
+    }
+    throw new Error('Positive fixture snapshot changed before submission on all 3 attempts; no run was accepted');
 }
 async function finished(page: Page, p: string, id: string) { let result: any; await expect.poll(async () => { result = await ok(await page.request.get(`/api/v1/projects/${p}/assistant/runs/${id}`)); return result.run.status; }, { timeout: 20000 }).not.toMatch(/^(queued|running)$/); return result; }
 const normalText = '**Р:** Договоры хранятся в системе предприятия.\n**Р:** Реквизиты приходится переписывать вручную.\n**Р:** Пользователь проверяет значения перед сохранением.';

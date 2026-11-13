@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test'
 import { ADMIN, LLM_URL, STAND } from './stand'
-import { waitForEpicAssessment, withFakeArchitect } from './fixtures/architecture-model'
+import { waitForEpicAssessment, withFakeArchitect, type FakeArchitectOptions } from './fixtures/architecture-model'
 export { waitForEpicAssessment, withFakeArchitect } from './fixtures/architecture-model'
 
 // Токен стенда намеренно длинный: короткий бэкенд не показывает вовсе,
@@ -97,11 +97,13 @@ export async function createEpic(page: Page, title: string): Promise<void> {
 
 // Explicit positive pipeline fixture: the normal UI creation is preserved,
 // and the real architecture gate completes before manual planning is opened.
-export async function createAssessedEpic(page: Page, title: string): Promise<void> {
+export async function createAssessedEpic(
+  page: Page, title: string, options: FakeArchitectOptions = {}
+): Promise<void> {
   await withFakeArchitect(page, async (connection, seen) => {
     await createEpic(page, title)
     await waitForEpicAssessment(page, connection, seen)
-  })
+  }, options)
 }
 
 export async function addTask(page: Page, title: string, description = ''): Promise<void> {
